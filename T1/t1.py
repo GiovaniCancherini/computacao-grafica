@@ -1,4 +1,3 @@
-import math
 import re
 
 from OpenGL.GLUT import *
@@ -32,9 +31,7 @@ class Ponto:
         x = self.x * escalar
         y = self.y * escalar
         return Ponto(x, y)
-    
 class Quadrado():
-    
     def __init__(self,x, y,  w, h,  c = (1,0,0)):
         self.x = x
         self.y = y
@@ -42,13 +39,7 @@ class Quadrado():
         self.h = h
         self.c = c
 
-quadrados = [Quadrado(  0,  0, 30,30, (1,0,0)), Quadrado(60 , 30 , 30,30, (1,0,1)),
-           Quadrado( 40, 80, 30,30, (0,1,0)), Quadrado(90 , 70 , 30,30, (0,1,1)),
-           Quadrado( 20,120, 30,30, (0,0,1)), Quadrado(225, 30 , 30,30, (1,0,1)),
-           Quadrado(115,210, 30,30, (1,0,0)), Quadrado(312, 112, 30,30, (1,0,1)),
-           Quadrado( 50,260, 30,30, (0,1,0)), Quadrado(444, 444, 30,30, (0,1,1)),
-           Quadrado( 30,330, 30,30, (0,0,1)), Quadrado(447, 301, 30,30, (1,0,1))]
-num_quadrado = 0
+####################################
 
 left = 0
 right = 0
@@ -56,8 +47,10 @@ top = 0
 bottom = 0
 panX = 0
 panY = 0
+DADOS = []
+CONTADOR = 0
 
-
+####################################
 
 def desenhaEixos():
     global left, right
@@ -87,20 +80,43 @@ def desenhaQuadrado(x, y, w, h):
 
     glPopMatrix()
 
-def teste(linha):
-    # Capturar os primeiros 4 caracteres e extrair um número, se houver
-    match_inicio = re.match(r"(\d{1,4})", linha.strip())
-    primeiro_numero = int(match_inicio.group(1)) if match_inicio else None
-    print("Número inicial:", primeiro_numero)
+def processar_arquivo(filename):
+    with open(filename, 'r') as file:
+        linhas = file.readlines()
 
-    # Capturar todos os trios de números entre parênteses
-    trios = re.findall(r"\((\d+),(\d+),(\d+)\)", linha)
-    trios_formatados = [tuple(map(int, trio)) for trio in trios]
-    print("Trios capturados:", trios_formatados)
+    # Primeiro valor importante (linha 1)
+    numero_importante = int(linhas[0].replace('[', '').replace(']', '').strip())
 
+    dados = []
+
+    # Processar as demais linhas
+    for linha in linhas[1:]:
+        # Captura o ID (qualquer coisa antes do primeiro parêntese)
+        match_id = re.match(r"(\d+)", linha)
+        if match_id:
+            id_linha = int(match_id.group(1))  # Converte ID para inteiro
+        else:
+            continue
+
+        # Captura os trios dentro dos parênteses
+        trios = re.findall(r"\((\d+),(\d+),(\d+)\)", linha)
+        trios = [tuple(map(int, trio)) for trio in trios]  # Converte para inteiros
+
+        # Adiciona ao resultado
+        dados.append({"id": id_linha, "trios": trios})
+
+    return numero_importante, dados
+
+def gerar_cor_a_partir_id(id_valor):
+    # Gera componentes de cor RGB com base no id
+    # Normaliza para o intervalo [0.0, 1.0]
+    r = (id_valor * 3) % 256 / 255.0  
+    g = (id_valor * 5) % 256 / 255.0
+    b = (id_valor * 7) % 256 / 255.0
+    return r, g, b
 
 def Desenha():
-    global translacaoX, translacaoY, left, right, top, bottom, panX, panY
+    global translacaoX, translacaoY, left, right, top, bottom, panX, panY, DADOS, CONTADOR
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -113,29 +129,26 @@ def Desenha():
 
     glColor3f(1,0,0)
 
-    # for quadrado in quadrados:
-        # glColor3f(quadrado.c[0], quadrado.c[1], quadrado.c[2])
-        # desenhaQuadrado(quadrado.x, quadrado.y, quadrado.h, quadrado.w)
+    #######################################
+    
+    for item in DADOS:
+        id_valor = item["id"]
+        trios = item["trios"]
 
+        if trios:
+            x, y, z = trios[CONTADOR % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
 
-    filename_input = 'Brazil - BR/BR-01/Paths_D.txt'
-    with open(filename_input, 'r') as file:
-        linhas = file.readlines()[:3]  # Le as n primeiras linhas de todo o arquivo
-        
-        # Salvar o primeiro inteiro da entrada
-        primeiro_valor = linhas[0]
-        print("Primeiro inteiro salvo:", primeiro_valor)
-        
-        # next(linhas) # ignora a primeira
-        for linha in linhas[1:]: 
-            teste(linha.strip())  # Chama a def teste() para cada linha
-
-
-
+            r,g,b = gerar_cor_a_partir_id(id_valor)
+            # Aqui, substitua pela sua lógica de desenho
+            glColor3f(r, g, b)  # Define a cor com base no trio
+            desenhaQuadrado(x, y, 50, 50)  # Exemplo de desenho, ajuste conforme necessário
+            
+    #######################################
+    
     glPushMatrix()
     glLoadIdentity()
-    # TODO: glTranslate()
-    desenhaEixos()
+    # TODO: PRECISA COMENTAR ? glTranslate()
+    # TODO: desenhaEixos()
     glPopMatrix()
     
     # Executa os comandos OpenGl
@@ -143,26 +156,17 @@ def Desenha():
 
     return
 
-
-# Função callback chamada para gerenciar eventos de teclas
 def Teclado(key: chr, x: int, y: int):
-    global num_quadrado
+    global CONTADOR
 
-    if key == 27:
+    if key == 27: # esc
         exit(0)
 
-    if key == b' ':
-        quadrados.append(Quadrado(0.25,0.25))
-        num_quadrado += 1
-        quadrados[num_quadrado].c = (num_quadrado / 9 % 3 / 2.0, 
-                                    num_quadrado / 3 % 3 / 2.0,
-                                    num_quadrado % 3 / 2.0)
+    if key == b' ': # barra de espaço
+        CONTADOR += 1                   # INCREMENTA POSICAO EM FUNCAO DO TEMPO [PRESSIONANDO ESPACO]
 
-    # Redesenha
-    glutPostRedisplay()
-
+    glutPostRedisplay() # Redesenha
     return
-
 
 def TeclasEspeciais(key: int, x: int, y: int):
     global left, right, top, bottom
@@ -184,9 +188,8 @@ def TeclasEspeciais(key: int, x: int, y: int):
     glutPostRedisplay()
     return
 
-
 def Inicializa():
-    global left, right, top, bottom, panX, panY
+    global left, right, top, bottom, panX, panY, DADOS, CONTADOR
 
     glMatrixMode(GL_PROJECTION)
     left = -1
@@ -196,8 +199,15 @@ def Inicializa():
     gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
     glMatrixMode(GL_MODELVIEW)
 
+    # processa todo o arquivo e armazena as informacoes
+    CONTADOR = 0
+    filename = 'C:/Users/Giovani.Silva/Desktop/computacao-grafica/Brazil - BR/BR-01/Paths_D.txt'
+    numero_importante, dados = processar_arquivo(filename)
+    DADOS = dados
+    print("Número importante:", numero_importante)
+    print("Dados extraídos:", dados)
+    
     return
-
 
 def main():
     glutInit(sys.argv)
@@ -226,7 +236,6 @@ def main():
         glutMainLoop()
     except SystemExit:
         pass
-
 
 if __name__ == '__main__':
     main()
