@@ -138,8 +138,8 @@ def Desenha():
         if trios:
             x, y, z = trios[CONTADOR % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
 
-            r,g,b = gerar_cor_a_partir_id(id_valor)
-            # Aqui, substitua pela sua lógica de desenho
+            r, g, b = gerar_cor_a_partir_id(id_valor)
+            
             glColor3f(r, g, b)  # Define a cor com base no trio
             desenhaQuadrado(x, y, 50, 50)  # Exemplo de desenho, ajuste conforme necessário
             
@@ -192,10 +192,10 @@ def Inicializa():
     global left, right, top, bottom, panX, panY, DADOS, CONTADOR
 
     glMatrixMode(GL_PROJECTION)
-    left = -1
+    left = 0
     right = 1
     top = 1
-    bottom = -1
+    bottom = 0
     gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
     glMatrixMode(GL_MODELVIEW)
 
@@ -205,7 +205,7 @@ def Inicializa():
     numero_importante, dados = processar_arquivo(filename)
     DADOS = dados
     print("Número importante:", numero_importante)
-    print("Dados extraídos:", dados)
+    # print("Dados extraídos:", dados)
     
     return
 
