@@ -1,46 +1,75 @@
+import sys
+import os
 import re
+import time
+import random
 
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import *
 
 class Ponto:
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, z: float = 0.0):  # z tem um valor padrão
         self.x = x
         self.y = y
-
+        self.z = z
+        
     def print(self) -> None:
-        print("Ponto (", self.x, ",", self.y, ")")
+        print("Ponto (", self.x, ",", self.y, ",", self.z, ")")
 
-    def set(self, x: float, y: float) -> None:
+    def set(self, x: float, y: float,  z: float) -> None:
         
         self.x = x
         self.y = y
+        self.z = z
 
     def __add__(self, other):
         x = self.x + other.x
         y = self.y + other.y
-        return Ponto(x, y)
+        z = self.z + other.z
+        return Ponto(x, y, z)
 
     def __sub__(self, other):
         x = self.x - other.x
         y = self.y - other.y
-        return Ponto(x, y)
+        z = self.z - other.z
+        return Ponto(x, y, z)
 
     def __mul__(self, escalar: float):
         x = self.x * escalar
         y = self.y * escalar
-        return Ponto(x, y)
+        z = self.z * escalar
+        return Ponto(x, y, z)
+class RGB():
+    def __init__(self, r, g, b):
+        self.r = r
+        self.g = g
+        self.b = b
 class Quadrado():
-    def __init__(self,x, y,  w, h,  c = (1,0,0)):
-        self.x = x
-        self.y = y
+    def __init__(self, ponto: Ponto, w: float, h: float, cor: RGB = RGB(1, 0, 0)):
+        self.ponto = ponto
         self.w = w
         self.h = h
-        self.c = c
+        self.cor = cor
+        self.ponto = ponto  
+        self.w = w
+        self.h = h
+        self.cor = cor  
+
+    def __repr__(self):
+        return f"Quadrado(Ponto={self.ponto}, w={self.w}, h={self.h}, cor={self.cor})"
 
 ####################################
+# Controle de tempo para animação
+tempo_antes = time.time()
+soma_dt = 0
+segundos = 0
+frames = 1
+nivel:int = 0
+inicializado = False
 
+####################################
+# Variáveis da câmera (viewport + pan)
 left = 0
 right = 0
 top = 0
@@ -48,10 +77,12 @@ bottom = 0
 panX = 0
 panY = 0
 DADOS = []
-CONTADOR = 0
+CONTADOR: int = 0
+REFERENCIA_SRU: float = 0.0
 
 ####################################
 
+# Desenha os eixos X e Y no mundo
 def desenhaEixos():
     global left, right
     glColor3f(1, 1, 1)
@@ -66,6 +97,7 @@ def desenhaEixos():
 
     return
 
+# Desenha um quadrado com rotação e translação
 def desenhaQuadrado(x, y, w, h):
     glPushMatrix()
 
@@ -79,13 +111,28 @@ def desenhaQuadrado(x, y, w, h):
     glEnd()
 
     glPopMatrix()
-
+    
+def desenhaQuadrilatero(quadrado: Quadrado):
+    global REFERENCIA_SRU
+    
+    glColor3f(quadrado.cor.r, quadrado.cor.g, quadrado.cor.b)
+    
+    glPushMatrix()
+    glTranslate(quadrado.ponto.x / REFERENCIA_SRU, quadrado.ponto.y / REFERENCIA_SRU, 0)
+    glBegin(GL_QUADS)    
+    glVertex2f(0, 0)
+    glVertex2f(quadrado.w / REFERENCIA_SRU, 0)
+    glVertex2f(quadrado.w / REFERENCIA_SRU, quadrado.h / REFERENCIA_SRU)
+    glVertex2f(0, quadrado.h / REFERENCIA_SRU)
+    glEnd()
+    glPopMatrix()
+    
 def processar_arquivo(filename):
     with open(filename, 'r') as file:
         linhas = file.readlines()
 
-    # Primeiro valor importante (linha 1)
-    numero_importante = int(linhas[0].replace('[', '').replace(']', '').strip())
+    # Primeiro valor = referencia SRU (linha 1)
+    referencia_SRU = int(linhas[0].replace('[', '').replace(']', '').strip())
 
     dados = []
 
@@ -105,7 +152,7 @@ def processar_arquivo(filename):
         # Adiciona ao resultado
         dados.append({"id": id_linha, "trios": trios})
 
-    return numero_importante, dados
+    return referencia_SRU, dados
 
 def gerar_cor_a_partir_id(id_valor):
     # Gera componentes de cor RGB com base no id
@@ -115,6 +162,7 @@ def gerar_cor_a_partir_id(id_valor):
     b = (id_valor * 7) % 256 / 255.0
     return r, g, b
 
+# Função de redesenho da cena
 def Desenha():
     global translacaoX, translacaoY, left, right, top, bottom, panX, panY, DADOS, CONTADOR
 
@@ -137,11 +185,14 @@ def Desenha():
 
         if trios:
             x, y, z = trios[CONTADOR % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
-
-            r, g, b = gerar_cor_a_partir_id(id_valor)
+            ponto = Ponto(x, y, z)
+            r, g, b = gerar_cor_a_partir_id(id_valor)  
+            cor = RGB(r, g, b) 
+            tamLado = 50
+            quadrado = Quadrado(ponto, tamLado, tamLado, cor)
             
-            glColor3f(r, g, b)  # Define a cor com base no trio
-            desenhaQuadrado(x, y, 50, 50)  # Exemplo de desenho, ajuste conforme necessário
+            desenhaQuadrilatero(quadrado)
+
             
     #######################################
     
@@ -156,59 +207,121 @@ def Desenha():
 
     return
 
+# Função chamada constantemente no "modo ocioso" (idle) para animar a cena
+def Animacao():
+    global soma_dt, tempo_antes, CONTADOR, segundos, frames, nivel, inicializado
+
+    tempo_agora = time.time()
+    delta_time = tempo_agora - tempo_antes
+    tempo_antes = tempo_agora
+    soma_dt += delta_time
+    segundos += delta_time
+
+    if nivel == 0 and not inicializado:
+        print("\n\n")
+        print("########################")
+        print("#### Inicio do jogo ####")
+        print("########################")
+        print("# Boa sorte!           #")
+        print(f"# Nivel: [ {nivel} ]         #")
+        print("########################")
+        inicializado = True
+    
+    tempo_mudanca_nivel = 10
+    if segundos >= tempo_mudanca_nivel:
+        segundos = 0
+        nivel += 1
+        frames += 7
+        print("\n\n")
+        print(f"################## Nivel: [ {nivel} ] ##################")
+        print("#                                                #")
+        print(f"#         Passaram-se +{tempo_mudanca_nivel} segundos!              #")
+        print("#                                                #")
+        print("##################################################")
+        
+    if soma_dt > 1.0 / frames: 
+        soma_dt = 0
+        CONTADOR += 1
+        # Solicita redesenho
+        glutPostRedisplay()
+       
+# Função para teclado
 def Teclado(key: chr, x: int, y: int):
     global CONTADOR
 
-    if key == 27: # esc
-        exit(0)
-
-    if key == b' ': # barra de espaço
-        CONTADOR += 1                   # INCREMENTA POSICAO EM FUNCAO DO TEMPO [PRESSIONANDO ESPACO]
-
+    if key == b'\x1b':  # esc
+        glutLeaveMainLoop() # solucao para sair da tela
+    # if key == b' ': # barra de espaço
+        # 
+        
     glutPostRedisplay() # Redesenha
-    return
 
+# Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
     global left, right, top, bottom
 
-    if key == GLUT_KEY_UP:              
-        top += 0.01
-        bottom += 0.01        
-    if key == GLUT_KEY_DOWN: 
-        top -= 0.01
-        bottom -= 0.01  
-    if key == GLUT_KEY_LEFT:
-        left -= 0.01
-        right -= 0.01  
-    if key == GLUT_KEY_RIGHT:
-        left += 0.01
-        right += 0.01   
-
+    # para mover a câmera
+    if glutGetModifiers() and GLUT_ACTIVE_CTRL:
+        if key == GLUT_KEY_UP:              
+            top += 0.01
+            bottom += 0.01        
+        if key == GLUT_KEY_DOWN: 
+            top -= 0.01
+            bottom -= 0.01  
+        if key == GLUT_KEY_LEFT:
+            left -= 0.01
+            right -= 0.01  
+        if key == GLUT_KEY_RIGHT:
+            left += 0.01
+            right += 0.01   
+            
+    # para mover personagem
+    
+    
     # Redesenha
     glutPostRedisplay()
     return
 
+# Inicializa a projeção ortográfica
 def Inicializa():
-    global left, right, top, bottom, panX, panY, DADOS, CONTADOR
+    global left, right, top, bottom, panX, panY
+    global DADOS, CONTADOR, REFERENCIA_SRU
+    global segundos, frames, nivel    
+
+    filename = os.path.join(os.path.dirname(__file__), "../T1/Paths_D.txt")
 
     glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+
+    segundos = 0
+    frames = 5
+    nivel = 0
+    # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
+    CONTADOR = 0
+    REFERENCIA_SRU = 0.0
+    
+    REFERENCIA_SRU, DADOS = processar_arquivo(filename)
+    print("Referencia SRU = ", REFERENCIA_SRU)
+
+    # Ajusta SRU com base no valor
+    half = REFERENCIA_SRU / 10
+    
     left = 0
-    right = 1
-    top = 1
+    right = half
     bottom = 0
+    top = half
+    
+    # left = 0
+    # right = REFERENCIA_SRU  # ou referencia_SRU / 2  ?
+    # top = REFERENCIA_SRU
+    # bottom = 0
+
     gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
     glMatrixMode(GL_MODELVIEW)
 
-    # processa todo o arquivo e armazena as informacoes
-    CONTADOR = 0
-    filename = '../T1/Paths_D.txt'
-    numero_importante, dados = processar_arquivo(filename)
-    DADOS = dados
-    print("Número importante:", numero_importante)
-    # print("Dados extraídos:", dados)
-    
     return
 
+# Função principal da aplicação
 def main():
     glutInit(sys.argv)
 
@@ -224,6 +337,9 @@ def main():
     # Registra a função callback de redesenho da janela de visualização
     glutDisplayFunc(Desenha)
 
+    # Registra a função callback para executar ao longo do tempo
+    glutIdleFunc(Animacao)
+    
     # Registra a função callback para tratamento das teclas ASCII
     glutKeyboardFunc(Teclado)
     glutSpecialFunc(TeclasEspeciais)
