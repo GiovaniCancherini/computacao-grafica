@@ -7,9 +7,9 @@
 - opengl-venv\Scripts\activate
 - deactivate 
 
-- pip install PyOpenGL PyOpenGL_accelerate
-- pip install --upgrade PyOpenGL PyOpenGL_accelerate
-- pip install pygame
+
+## install bibs
+- pip install -r requirements.txt
 
 
 

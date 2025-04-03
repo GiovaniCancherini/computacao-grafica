@@ -201,7 +201,7 @@ def Inicializa():
 
     # processa todo o arquivo e armazena as informacoes
     CONTADOR = 0
-    filename = 'C:/Users/Giovani.Silva/Desktop/computacao-grafica/Brazil - BR/BR-01/Paths_D.txt'
+    filename = '../T1/Paths_D.txt'
     numero_importante, dados = processar_arquivo(filename)
     DADOS = dados
     print("Número importante:", numero_importante)
