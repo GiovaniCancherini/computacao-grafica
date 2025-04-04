@@ -59,7 +59,13 @@ class Quadrado():
 
     def __repr__(self):
         return f"Quadrado(Ponto={self.ponto}, w={self.w}, h={self.h}, cor={self.cor})"
-
+####################################
+# Variáveis globais
+DADOS = []
+INDEX: int = 0
+SCORE: int = 0
+idle_ativo = True
+teclas_pressionadas = set()  
 ####################################
 # Controle de tempo para animação
 tempo_antes = time.time()
@@ -68,7 +74,7 @@ segundos = 0
 frames = 1
 nivel:int = 0
 inicializado = False
-
+segundos_pontuacao = 0
 ####################################
 # Variáveis da câmera (viewport + pan)
 left = 0
@@ -77,17 +83,67 @@ top = 0
 bottom = 0
 panX = 0
 panY = 0
-DADOS = []
-CONTADOR: int = 0
 REFERENCIA_SRU: float = 0.0
-
 ####################################
 # Variáveis do triagulo
 xTriangulo: float = 1.0
 yTriangulo: float = 1.0
-teclas_pressionadas = set()  
+tamanhoQuadrado = 50
+tamanhoTriangulo = 50
 ####################################
 
+def pausarJogo():
+    global idle_ativo
+    idle_ativo = False
+    
+def retomarJogo():
+    global idle_ativo
+    idle_ativo = True
+    
+def boundingBox(triangulo_pos, triangulo_tam, quadrado_pos, quadrado_tam):
+    # cria uma bounding box para o triangulo
+    tri_x_min = triangulo_pos.x
+    tri_x_max = triangulo_pos.x + triangulo_tam
+    tri_y_min = triangulo_pos.y
+    tri_y_max = triangulo_pos.y + triangulo_tam
+    
+    # bounding box do quadrado
+    quad_x_min = quadrado_pos.x
+    quad_x_max = quadrado_pos.x + quadrado_tam
+    quad_y_min = quadrado_pos.y
+    quad_y_max = quadrado_pos.y + quadrado_tam
+    
+    # verifica se sobrepoem
+    if (tri_x_max < quad_x_min or tri_x_min > quad_x_max or
+        tri_y_max < quad_y_min or tri_y_min > quad_y_max):
+        return False  # nao ha colisao
+    
+    return True
+
+def verificarColisoes():
+    global DADOS, INDEX, REFERENCIA_SRU
+    global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
+    colisoes = []
+    
+    ponto_triangulo = Ponto(xTriangulo, yTriangulo, 0)
+    tam_triangulo = 50  # Tamanho do lado do triângulo
+    
+    for item in DADOS:
+        id_valor = item["id"]
+        trios = item["trios"]
+        
+        if trios:
+            x, y, z = trios[INDEX % len(trios)]
+            ponto_quadrado = Ponto(x, y, z)
+            tam_quadrado = 45  # Tamanho do lado do quadrado
+            
+            # Verifica colisão
+            if boundingBox(ponto_triangulo, tam_triangulo, ponto_quadrado, tam_quadrado):
+                colisoes.append(id_valor)
+    
+    return colisoes
+
+####################################
 # Desenha os eixos X e Y no mundo
 def desenhaEixos():
     global left, right
@@ -133,8 +189,10 @@ def desenhaTriangulo(triangulo: Quadrado):
     
     glEnd()
     glPopMatrix()
-    
-def processar_arquivo(filename):
+
+####################################
+
+def processarArquivo(filename):
     with open(filename, 'r') as file:
         linhas = file.readlines()
 
@@ -161,7 +219,7 @@ def processar_arquivo(filename):
 
     return referencia_SRU, dados
 
-def gerar_cor_a_partir_id(id_valor):
+def gerarCorPorID(id_valor):
     # Gera componentes de cor RGB com base no id
     # Normaliza para o intervalo [0.0, 1.0]
     r = (id_valor * 3) % 256 / 255.0  
@@ -171,8 +229,10 @@ def gerar_cor_a_partir_id(id_valor):
 
 # Função de redesenho da cena
 def Desenha():
-    global translacaoX, translacaoY, left, right, top, bottom, panX, panY, DADOS, CONTADOR, xTriangulo, yTriangulo, REFERENCIA_SRU, nivel
-
+    global left, right, top, bottom, panX, panY 
+    global DADOS, INDEX, REFERENCIA_SRU, nivel
+    global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
+    
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
@@ -191,12 +251,11 @@ def Desenha():
         trios = item["trios"]
 
         if trios:
-            x, y, z = trios[CONTADOR % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
+            x, y, z = trios[INDEX % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
             ponto = Ponto(x, y, z)
-            r, g, b = gerar_cor_a_partir_id(id_valor)  
+            r, g, b = gerarCorPorID(id_valor)  
             cor = RGB(r, g, b) 
-            tamLado = 45
-            quadrado = Quadrado(ponto, tamLado, tamLado, cor)
+            quadrado = Quadrado(ponto, tamanhoQuadrado, tamanhoQuadrado, cor)
             
             desenhaQuadrilatero(quadrado)
 
@@ -204,8 +263,7 @@ def Desenha():
     # desenha o triangulo controlavel
     ponto = Ponto(xTriangulo, yTriangulo, 0) # origem
     cor = RGB(1, 1, 1) # branco
-    tamLado = 50
-    triangulo = Quadrado(ponto, tamLado, tamLado, cor)
+    triangulo = Quadrado(ponto, tamanhoTriangulo, tamanhoTriangulo, cor)
     desenhaTriangulo(triangulo)
     
     #######################################
@@ -220,25 +278,42 @@ def Desenha():
 
     return
 
+####################################
 # Função chamada constantemente no "modo ocioso" (idle) para animar a cena
 def Animacao():
-    global soma_dt, tempo_antes, CONTADOR, segundos, frames, nivel, inicializado
-
+    global soma_dt, tempo_antes
+    global INDEX, segundos, frames, nivel, inicializado
+    global xTriangulo, yTriangulo
+    global idle_ativo, SCORE, segundos_pontuacao
+    
+    if not idle_ativo: # interrompe 
+        return
+    
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
     tempo_antes = tempo_agora
     soma_dt += delta_time
     segundos += delta_time
-
+    segundos_pontuacao += delta_time
+    
     if nivel == 0 and not inicializado:
         print("\n\n")
-        print("########################")
-        print("#### Inicio do jogo ####")
-        print("########################")
-        print("# Boa sorte!           #")
-        print(f"# Nivel: [ {nivel} ]         #")
-        print("########################")
+        print("##################################################")
+        print("#                 Inicio do jogo                 #")
+        print("##################################################")
+        print("\n")
+        print(f"################## Nivel: [ {nivel} ] ##################")
+        print("#                                                #")
+        print("#                    Boa Sorte!                  #")
+        print("#                                                #")
+        print("##################################################")
         inicializado = True
+    
+    tempo_pontuacao = 1
+    if segundos_pontuacao >= tempo_pontuacao:
+        segundos_pontuacao = 0
+        SCORE += 1 # AUMENTA A PONTUACAO
+    
     
     tempo_mudanca_nivel = 10
     if segundos >= tempo_mudanca_nivel:
@@ -257,10 +332,29 @@ def Animacao():
         
     if soma_dt > 1.0 / frames: 
         soma_dt = 0
-        CONTADOR += 1
+        INDEX += 1
+        
+        # Verifica colisões após atualizar posições
+        colisoes = verificarColisoes()
+        if colisoes:
+            pausarJogo()
+            print(f"\nColisao detectada com quadrados de IDs: {colisoes}")
+            print("\n\n")
+            print("################## GAME OVER ##################")
+            print("#                                             #")
+            print("#             Voce perdeu o jogo!             #")
+            print("#              SUA PONTUACAO: ", SCORE)
+            print("#                                             #")
+            print("###############################################")
+            pygame.mixer.init()
+            pygame.mixer.music.load("roblox-death.mp3")
+            pygame.mixer.music.play()
+            return
+        
         # Solicita redesenho
         glutPostRedisplay()
-
+        
+####################################
 def pressionaTecla(key, x: int, y: int):  # Quando uma tecla for pressionada
     global xTriangulo, yTriangulo, teclas_pressionadas
     teclas_pressionadas.add(key)  # Adiciona tecla ao conjunto
@@ -272,18 +366,23 @@ def soltaTecla(key, x: int, y: int):  # Quando uma tecla for solta
     
 # Função para teclado
 def Teclado(key: chr, x: int, y: int):
-    global CONTADOR
+    global INDEX, idle_ativo
 
     if key == b'\x1b':  # esc
         glutLeaveMainLoop() # solucao para sair da tela
     # if key == b' ': # barra de espaço
-        # 
+    if key == b'p':  # pausar/despausar
+        idle_ativo = not idle_ativo
         
     glutPostRedisplay() # Redesenha
 
 # Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
     global left, right, top, bottom, xTriangulo, yTriangulo
+    global idle_ativo
+    
+    if not idle_ativo: # interrompe 
+        return
     
     deslocamentoCamera:float = 0.1
     deslocamento:float = 7
@@ -332,10 +431,11 @@ def TeclasEspeciais(key: int, x: int, y: int):
     glutPostRedisplay()
     return
 
+####################################
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
-    global DADOS, CONTADOR, REFERENCIA_SRU
+    global DADOS, INDEX, REFERENCIA_SRU
     global segundos, frames, nivel    
 
     filename = os.path.join(os.path.dirname(__file__), "../T1/Paths_D.txt")
@@ -347,10 +447,10 @@ def Inicializa():
     frames = 5
     nivel = 0
     # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
-    CONTADOR = 0
+    INDEX = 0
     REFERENCIA_SRU = 0.0
     
-    REFERENCIA_SRU, DADOS = processar_arquivo(filename)
+    REFERENCIA_SRU, DADOS = processarArquivo(filename)
     print("Referencia SRU = ", REFERENCIA_SRU)
 
     # Ajusta SRU com base no valor
@@ -380,7 +480,7 @@ def main():
     glutInitWindowSize(800, 800)
 
     # Cria a janela passando como argumento o título da mesma
-    glutCreateWindow(b"Desenha OpenGL")
+    glutCreateWindow(b"Trabalho 1 - Usando o OpenGL")
 
     # Registra a função callback de redesenho da janela de visualização
     glutDisplayFunc(Desenha)
