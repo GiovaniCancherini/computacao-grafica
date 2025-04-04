@@ -81,6 +81,11 @@ CONTADOR: int = 0
 REFERENCIA_SRU: float = 0.0
 
 ####################################
+# Variáveis do triagulo
+xTriangulo: float = 1.0
+yTriangulo: float = 1.0
+teclas_pressionadas = set()  
+####################################
 
 # Desenha os eixos X e Y no mundo
 def desenhaEixos():
@@ -96,21 +101,6 @@ def desenhaEixos():
     glEnd()
 
     return
-
-# Desenha um quadrado com rotação e translação
-def desenhaQuadrado(x, y, w, h):
-    glPushMatrix()
-
-    glTranslate(x/1000, y/1000, 0)
-
-    glBegin(GL_QUADS)    
-    glVertex2f(0, 0)
-    glVertex2f(w/1000, 0)
-    glVertex2f(w/1000, h/1000)
-    glVertex2f(0, h/1000)
-    glEnd()
-
-    glPopMatrix()
     
 def desenhaQuadrilatero(quadrado: Quadrado):
     global REFERENCIA_SRU
@@ -124,6 +114,22 @@ def desenhaQuadrilatero(quadrado: Quadrado):
     glVertex2f(quadrado.w / REFERENCIA_SRU, 0)
     glVertex2f(quadrado.w / REFERENCIA_SRU, quadrado.h / REFERENCIA_SRU)
     glVertex2f(0, quadrado.h / REFERENCIA_SRU)
+    glEnd()
+    glPopMatrix()
+    
+def desenhaTriangulo(triangulo: Quadrado): 
+    global REFERENCIA_SRU
+
+    glColor3f(triangulo.cor.r, triangulo.cor.g, triangulo.cor.b)
+    
+    glPushMatrix()
+    glTranslate(triangulo.ponto.x / REFERENCIA_SRU, triangulo.ponto.y / REFERENCIA_SRU, 0)
+    glBegin(GL_TRIANGLES)
+    
+    glVertex2f(0, 0)
+    glVertex2f(triangulo.w / REFERENCIA_SRU, 0)
+    glVertex2f((triangulo.w / 2) / REFERENCIA_SRU, triangulo.h / REFERENCIA_SRU)
+    
     glEnd()
     glPopMatrix()
     
@@ -164,7 +170,7 @@ def gerar_cor_a_partir_id(id_valor):
 
 # Função de redesenho da cena
 def Desenha():
-    global translacaoX, translacaoY, left, right, top, bottom, panX, panY, DADOS, CONTADOR
+    global translacaoX, translacaoY, left, right, top, bottom, panX, panY, DADOS, CONTADOR, xTriangulo, yTriangulo, REFERENCIA_SRU, nivel
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -178,7 +184,7 @@ def Desenha():
     glColor3f(1,0,0)
 
     #######################################
-    
+    # desenha os quadrados
     for item in DADOS:
         id_valor = item["id"]
         trios = item["trios"]
@@ -188,14 +194,20 @@ def Desenha():
             ponto = Ponto(x, y, z)
             r, g, b = gerar_cor_a_partir_id(id_valor)  
             cor = RGB(r, g, b) 
-            tamLado = 50
+            tamLado = 45
             quadrado = Quadrado(ponto, tamLado, tamLado, cor)
             
             desenhaQuadrilatero(quadrado)
 
-            
     #######################################
+    # desenha o triangulo controlavel
+    ponto = Ponto(xTriangulo, yTriangulo, 0) # origem
+    cor = RGB(1, 1, 1) # branco
+    tamLado = 50
+    triangulo = Quadrado(ponto, tamLado, tamLado, cor)
+    desenhaTriangulo(triangulo)
     
+    #######################################
     glPushMatrix()
     glLoadIdentity()
     # TODO: PRECISA COMENTAR ? glTranslate()
@@ -244,7 +256,16 @@ def Animacao():
         CONTADOR += 1
         # Solicita redesenho
         glutPostRedisplay()
-       
+
+def pressionaTecla(key, x: int, y: int):  # Quando uma tecla for pressionada
+    global xTriangulo, yTriangulo, teclas_pressionadas
+    teclas_pressionadas.add(key)  # Adiciona tecla ao conjunto
+    TeclasEspeciais(key, x, y)
+
+def soltaTecla(key, x: int, y: int):  # Quando uma tecla for solta
+    global teclas_pressionadas
+    teclas_pressionadas.discard(key)  # Remove tecla do conjunto
+    
 # Função para teclado
 def Teclado(key: chr, x: int, y: int):
     global CONTADOR
@@ -258,25 +279,50 @@ def Teclado(key: chr, x: int, y: int):
 
 # Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
-    global left, right, top, bottom
-
+    global left, right, top, bottom, xTriangulo, yTriangulo
+    
+    deslocamentoCamera:float = 0.1
+    deslocamento:float = 7
+    
     # para mover a câmera
     if glutGetModifiers() and GLUT_ACTIVE_CTRL:
         if key == GLUT_KEY_UP:              
-            top += 0.01
-            bottom += 0.01        
+            top += deslocamentoCamera
+            bottom += deslocamentoCamera       
         if key == GLUT_KEY_DOWN: 
-            top -= 0.01
-            bottom -= 0.01  
+            top -= deslocamentoCamera
+            bottom -= deslocamentoCamera
         if key == GLUT_KEY_LEFT:
-            left -= 0.01
-            right -= 0.01  
+            left -= deslocamentoCamera
+            right -= deslocamentoCamera
         if key == GLUT_KEY_RIGHT:
-            left += 0.01
-            right += 0.01   
+            left += deslocamentoCamera
+            right += deslocamentoCamera
             
     # para mover personagem
-    
+    # 2 direcoes (diagonais)
+    if GLUT_KEY_UP in teclas_pressionadas and GLUT_KEY_RIGHT in teclas_pressionadas:
+        xTriangulo += deslocamento
+        yTriangulo += deslocamento
+    elif GLUT_KEY_UP in teclas_pressionadas and GLUT_KEY_LEFT in teclas_pressionadas:
+        xTriangulo -= deslocamento
+        yTriangulo += deslocamento
+    elif GLUT_KEY_DOWN in teclas_pressionadas and GLUT_KEY_RIGHT in teclas_pressionadas:
+        xTriangulo += deslocamento
+        yTriangulo -= deslocamento
+    elif GLUT_KEY_DOWN in teclas_pressionadas and GLUT_KEY_LEFT in teclas_pressionadas:
+        xTriangulo -= deslocamento
+        yTriangulo -= deslocamento
+    else:
+        # 1 direcao
+        if key == GLUT_KEY_UP:           
+            yTriangulo += deslocamento       
+        if key == GLUT_KEY_DOWN: 
+            yTriangulo -= deslocamento
+        if key == GLUT_KEY_LEFT:
+            xTriangulo -= deslocamento
+        if key == GLUT_KEY_RIGHT:
+            xTriangulo += deslocamento
     
     # Redesenha
     glutPostRedisplay()
@@ -284,7 +330,7 @@ def TeclasEspeciais(key: int, x: int, y: int):
 
 # Inicializa a projeção ortográfica
 def Inicializa():
-    global left, right, top, bottom, panX, panY
+    global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
     global DADOS, CONTADOR, REFERENCIA_SRU
     global segundos, frames, nivel    
 
@@ -311,11 +357,9 @@ def Inicializa():
     bottom = 0
     top = half
     
-    # left = 0
-    # right = REFERENCIA_SRU  # ou referencia_SRU / 2  ?
-    # top = REFERENCIA_SRU
-    # bottom = 0
-
+    xTriangulo += 3 * REFERENCIA_SRU
+    yTriangulo += 3 * REFERENCIA_SRU
+    
     gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
     glMatrixMode(GL_MODELVIEW)
 
@@ -343,7 +387,9 @@ def main():
     # Registra a função callback para tratamento das teclas ASCII
     glutKeyboardFunc(Teclado)
     glutSpecialFunc(TeclasEspeciais)
-
+    glutSpecialFunc(pressionaTecla)
+    glutSpecialUpFunc(soltaTecla)
+    
     # Chama a função responsável por fazer as inicializações
     Inicializa()
 
