@@ -385,7 +385,7 @@ def TeclasEspeciais(key: int, x: int, y: int):
         return
     
     deslocamentoCamera:float = 0.1
-    deslocamento:float = 7
+    deslocamento:float = 10
     
     # para mover a câmera
     if glutGetModifiers() and GLUT_ACTIVE_CTRL:
