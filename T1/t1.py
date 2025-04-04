@@ -2,11 +2,13 @@ import sys
 import os
 import re
 import time
-import random
 
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import *
+from OpenGL.GLUT import GLUT_BITMAP_9_BY_15
+
+logging.basicConfig(level=logging.DEBUG)
 
 class Ponto:
     def __init__(self, x: float, y: float, z: float = 0.0):  # z tem um valor padrão
@@ -58,7 +60,88 @@ class Quadrado():
 
     def __repr__(self):
         return f"Quadrado(Ponto={self.ponto}, w={self.w}, h={self.h}, cor={self.cor})"
+class Menu:
+    def __init__(self, jogo_func):
+        # Armazenar a referência para a função jogo
+        self.jogo_func = jogo_func
+        
+        # Configurar a janela
+        glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH)
+        glutInitWindowSize(800, 600)
+        
+        glutCreateWindow(b"Menu OpenGL")  # Usando b para converter para bytes
+        
+        # Registrar callbacks
+        glutDisplayFunc(self.display)
+        glutReshapeFunc(self.reshape)
+        
+        # Criar menu
+        self.create_menu()
+        
+        # Inicializar variáveis
+        self.option_selected = None
 
+    def create_menu(self):
+        # Criar menu e atribuir func de callback
+        glutCreateMenu(self.process_menu_events)
+        glutAddMenuEntry(b"Iniciar Jogo", 1)
+        glutAddMenuEntry(b"Sair", 0)
+        glutAttachMenu(GLUT_RIGHT_BUTTON)
+    
+    def process_menu_events(self, option):
+        logging.debug(f"Menu op selecionada: {option}")
+        self.option_selected = option
+        
+        if option == 1:  # Iniciar Jogo
+            logging.debug("Iniciando jogo...")
+            # Em algumas versões, glutLeaveMainLoop não está disponível
+            try:
+                # Tentar sair do loop principal
+                # glutLeaveMainLoop()
+                # Chamar a função do jogo depois
+                self.jogo_func()
+            except:
+                # Se não funcionar, usamos outra abordagem
+                logging.debug("glutLeaveMainLoop não disponível, usando alternativa")
+                # Simples chamada direta (pode não funcionar perfeitamente)
+                self.jogo_func()
+        elif option == 0:  # Sair
+            logging.debug("Saindo...")
+            glutLeaveMainLoop() # solucao para sair da tela
+        
+        # Redesenhar a tela para refletir a escolha
+        glutPostRedisplay()
+    
+    def display(self):
+        # Limpar o buffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        
+        # Definir cor de fundo
+        glClearColor(0.2, 0.2, 0.2, 1.0)
+        
+        # Desenhar texto na tela
+        self.draw_text(10, 150, "MENU PRINCIPAL")
+        self.draw_text(10, 100, "Clique com o botao direito para abrir o menu")
+        
+        # Trocar os buffers
+        glutSwapBuffers()
+    
+    def reshape(self, width, height):
+        # Ajustar a viewport quando a janela é redimensionada
+        glViewport(0, 0, width, height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        # Configurar projeção ortográfica 2D
+        gluOrtho2D(0, width, 0, height)
+        glMatrixMode(GL_MODELVIEW)
+    
+    def draw_text(self, x, y, text):
+        glColor3f(1.0, 1.0, 1.0)  # Cor branca
+        glRasterPos2f(x, y)
+        for char in text:
+            glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(char))
+        
 ####################################
 # Controle de tempo para animação
 tempo_antes = time.time()
@@ -322,7 +405,7 @@ def Inicializa():
     return
 
 # Função principal da aplicação
-def main():
+def jogo():
     glutInit(sys.argv)
 
     # Define do modo de operação da GLUT
@@ -352,6 +435,18 @@ def main():
         glutMainLoop()
     except SystemExit:
         pass
+
+def main():
+    # Inicializar GLUT
+    glutInit(sys.argv)
+    
+    # Criar instância do menu passando a função jogo como parâmetro
+    menu = Menu(jogo)
+    
+    # Iniciar o loop principal do GLUT
+    glutMainLoop()
+    
+    return
 
 if __name__ == '__main__':
     main()
