@@ -220,12 +220,23 @@ def processarArquivo(filename):
     return referencia_SRU, dados
 
 def gerarCorPorID(id_valor):
-    # Gera componentes de cor RGB com base no id
-    # Normaliza para o intervalo [0.0, 1.0]
-    r = (id_valor * 3) % 256 / 255.0  
-    g = (id_valor * 5) % 256 / 255.0
-    b = (id_valor * 7) % 256 / 255.0
+    # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
+    # https://stackoverflow.com/questions/69719050/i-am-trying-to-exclude-the-color-black-when-picking-random-colors
+    # https://stackoverflow.com/questions/1168260/algorithm-for-generating-unique-colors
+    
+    r = ((id_valor * 37) % 230 + 10) / 255.0  
+    g = ((id_valor * 59) % 230 + 10) / 255.0
+    b = ((id_valor * 83) % 230 + 10) / 255.0
+
+    # Evita tons muito escuros ou muito claros
+    brilho = r + g + b
+    if brilho < 0.4 or brilho > 2.6:
+        r = max(0.2, min(r * 1.2, 0.8))
+        g = max(0.2, min(g * 1.2, 0.8))
+        b = max(0.2, min(b * 1.2, 0.8))
+    
     return r, g, b
+
 
 # Função de redesenho da cena
 def Desenha():
