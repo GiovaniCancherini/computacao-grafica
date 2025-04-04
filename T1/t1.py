@@ -321,7 +321,7 @@ def Animacao():
         nivel += 1
         frames += 7
         pygame.mixer.init()
-        pygame.mixer.music.load("level_up_pokemon.mp3")
+        pygame.mixer.music.load("sounds/level_up_pokemon.mp3")
         pygame.mixer.music.play()
         print("\n\n")
         print(f"################## Nivel: [ {nivel} ] ##################")
@@ -347,7 +347,7 @@ def Animacao():
             print("#                                             #")
             print("###############################################")
             pygame.mixer.init()
-            pygame.mixer.music.load("roblox-death.mp3")
+            pygame.mixer.music.load("sounds/roblox-death.mp3")
             pygame.mixer.music.play()
             return
         
@@ -432,13 +432,27 @@ def TeclasEspeciais(key: int, x: int, y: int):
     return
 
 ####################################
+def obtemArquivos():
+    base_path = os.path.join(os.path.dirname(__file__), "Brazil - BR")
+    candidates = []
+
+    for item in os.listdir(base_path):
+        item_path = os.path.join(base_path, item)
+        if os.path.isfile(item_path):
+            candidates.append(item_path)
+    if not candidates:
+        return None  
+
+    index = random.randint(0, len(candidates) - 1)
+    selected_path = os.path.join(base_path, candidates[index])
+    print(selected_path)
+    return selected_path
+    
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
     global DADOS, INDEX, REFERENCIA_SRU
     global segundos, frames, nivel    
-
-    filename = os.path.join(os.path.dirname(__file__), "../T1/Paths_D.txt")
 
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -450,7 +464,8 @@ def Inicializa():
     INDEX = 0
     REFERENCIA_SRU = 0.0
     
-    REFERENCIA_SRU, DADOS = processarArquivo(filename)
+    fullpath = obtemArquivos()
+    REFERENCIA_SRU, DADOS = processarArquivo(fullpath)
     print("Referencia SRU = ", REFERENCIA_SRU)
 
     # Ajusta SRU com base no valor
