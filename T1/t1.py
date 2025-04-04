@@ -3,6 +3,7 @@ import os
 import re
 import time
 import random
+import pygame
 
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -244,6 +245,9 @@ def Animacao():
         segundos = 0
         nivel += 1
         frames += 7
+        pygame.mixer.init()
+        pygame.mixer.music.load("level_up_pokemon.mp3")
+        pygame.mixer.music.play()
         print("\n\n")
         print(f"################## Nivel: [ {nivel} ] ##################")
         print("#                                                #")
