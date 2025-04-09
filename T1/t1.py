@@ -127,7 +127,7 @@ def boundingBox(triangulo_pos, triangulo_tam, quadrado_pos, quadrado_tam):
     return True
 
 def verificarColisoes():
-    global DADOS, INDEX, REFERENCIA_SRU
+    global DADOS, INDEX
     global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
     colisoes = []
     
@@ -166,32 +166,28 @@ def desenhaEixos():
     return
     
 def desenhaQuadrilatero(quadrado: Quadrado):
-    global REFERENCIA_SRU
-    
     glColor3f(quadrado.cor.r, quadrado.cor.g, quadrado.cor.b)
     
     glPushMatrix()
-    glTranslate(quadrado.ponto.x / REFERENCIA_SRU, quadrado.ponto.y / REFERENCIA_SRU, 0)
+    glTranslate(quadrado.ponto.x, quadrado.ponto.y, 0)
     glBegin(GL_QUADS)    
     glVertex2f(0, 0)
-    glVertex2f(quadrado.w / REFERENCIA_SRU, 0)
-    glVertex2f(quadrado.w / REFERENCIA_SRU, quadrado.h / REFERENCIA_SRU)
-    glVertex2f(0, quadrado.h / REFERENCIA_SRU)
+    glVertex2f(quadrado.w, 0)
+    glVertex2f(quadrado.w, quadrado.h)
+    glVertex2f(0, quadrado.h)
     glEnd()
     glPopMatrix()
     
 def desenhaTriangulo(triangulo: Quadrado): 
-    global REFERENCIA_SRU
-
     glColor3f(triangulo.cor.r, triangulo.cor.g, triangulo.cor.b)
     
     glPushMatrix()
-    glTranslate(triangulo.ponto.x / REFERENCIA_SRU, triangulo.ponto.y / REFERENCIA_SRU, 0)
+    glTranslate(triangulo.ponto.x, triangulo.ponto.y, 0)
     glBegin(GL_TRIANGLES)
     
     glVertex2f(0, 0)
-    glVertex2f(triangulo.w / REFERENCIA_SRU, 0)
-    glVertex2f((triangulo.w / 2) / REFERENCIA_SRU, triangulo.h / REFERENCIA_SRU)
+    glVertex2f(triangulo.w, 0)
+    glVertex2f((triangulo.w / 2), triangulo.h)
     
     glEnd()
     glPopMatrix()
@@ -239,7 +235,7 @@ def processarArquivo(filename):
         
     return referencia_SRU, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
-def gerarCorPorID():
+def gerarCor():
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
     # https://stackoverflow.com/questions/69719050/i-am-trying-to-exclude-the-color-black-when-picking-random-colors
     # https://stackoverflow.com/questions/1168260/algorithm-for-generating-unique-colors
@@ -257,7 +253,6 @@ def gerarCorPorID():
     
     return r, g, b
 
-
 # Função de redesenho da cena
 def Desenha():
     global left, right, top, bottom, panX, panY 
@@ -267,6 +262,21 @@ def Desenha():
     
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
+    
+    larguraMundo = maiorValorX - menorValorX
+    alturaMundo = maiorValorY - menorValorY
+    tamanhoMundo = max(larguraMundo, alturaMundo)
+
+    centroX = (maiorValorX + menorValorX) / 2 + panX
+    centroY = (maiorValorY + menorValorY) / 2 + panY
+
+    metadeTamanho = tamanhoMundo / 2 + margem
+
+    left = centroX - metadeTamanho
+    right = centroX + metadeTamanho
+    bottom = centroY - metadeTamanho
+    top = centroY + metadeTamanho
+    
     gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
 
@@ -285,7 +295,7 @@ def Desenha():
         if trios:
             x, y, z = trios[INDEX % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
             ponto = Ponto(x, y, z)
-            r, g, b = gerarCorPorID()  
+            r, g, b = gerarCor()  
             cor = RGB(r, g, b) 
             quadrado = Quadrado(ponto, tamanhoQuadrado, tamanhoQuadrado, cor)
             
@@ -489,24 +499,31 @@ def Inicializa():
     
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-
-    frames = 5
     
     # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
     fullpath = obtemArquivos()
     TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
     
+    frames = 5
     REFERENCIA_SRU = max(maiorValorX - menorValorX, maiorValorY - menorValorY, 1)
-
     margem = 20 
-
-    left = menorValorX - margem + panX
-    right = maiorValorX + margem + panX
-    bottom = menorValorY - margem + panY
-    top = maiorValorY + margem + panY
     
-    xTriangulo += maiorValorX / 2
-    yTriangulo += maiorValorY / 2
+    larguraMundo = maiorValorX - menorValorX
+    alturaMundo = maiorValorY - menorValorY
+    tamanhoMundo = max(larguraMundo, alturaMundo)
+    
+    centroX = (maiorValorX + menorValorX) / 2 + panX
+    centroY = (maiorValorY + menorValorY) / 2 + panY
+
+    metadeTamanho = tamanhoQuadrado / 2 + margem
+
+    left = centroX - metadeTamanho
+    right = centroX + metadeTamanho
+    bottom = centroY - metadeTamanho
+    top = centroY + metadeTamanho
+    
+    xTriangulo = metadeTamanho
+    yTriangulo = metadeTamanho
     
     gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
