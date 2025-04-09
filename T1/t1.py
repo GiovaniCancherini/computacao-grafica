@@ -62,6 +62,7 @@ class Quadrado():
 ####################################
 # Variáveis globais
 DADOS = []
+TOTAL_FRAMES: int = 0
 INDEX: int = 0
 SCORE: int = 0
 idle_ativo = True
@@ -84,10 +85,15 @@ bottom = 0
 panX = 0
 panY = 0
 REFERENCIA_SRU: float = 0.0
+maiorValorX: int = 0
+maiorValorY: int = 0
+menorValorX: int = 0
+menorValorY: int = 0
+margem: int = 0
 ####################################
 # Variáveis do triagulo
-xTriangulo: float = 1.0
-yTriangulo: float = 1.0
+xTriangulo: float = 0.0
+yTriangulo: float = 0.0
 tamanhoQuadrado = 50
 tamanhoTriangulo = 50
 ####################################
@@ -201,9 +207,6 @@ def processarArquivo(filename):
 
     dados = []
 
-    maiorValorX, maiorValorY = 0, 0
-    menorValorX, menorValorY = 0, 0
-
     # Processar as demais linhas
     for linha in linhas[1:]:
         # Captura o ID (qualquer coisa antes do primeiro parêntese)
@@ -228,7 +231,13 @@ def processarArquivo(filename):
         # Adiciona ao resultado de retorno
         dados.append({"id": id_linha, "trios": novos_trios})
 
-    return referencia_SRU, dados
+        # arrow function em python para obter o maior e o menor valor
+        maiorValorX = max(map(lambda trio: trio[0], novos_trios))
+        maiorValorY = max(map(lambda trio: trio[1], novos_trios))
+        menorValorX = min(map(lambda trio: trio[0], novos_trios))
+        menorValorY = min(map(lambda trio: trio[1], novos_trios))
+        
+    return referencia_SRU, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
 def gerarCorPorID():
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
@@ -252,12 +261,13 @@ def gerarCorPorID():
 # Função de redesenho da cena
 def Desenha():
     global left, right, top, bottom, panX, panY 
-    global DADOS, INDEX, REFERENCIA_SRU, nivel
+    global DADOS, INDEX, nivel
     global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
+    global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
     
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
+    gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
 
     # Liam a janela de visualização com a cor branca
@@ -473,35 +483,32 @@ def obtemArquivos():
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
-    global DADOS, INDEX, REFERENCIA_SRU
+    global DADOS, INDEX, TOTAL_FRAMES, REFERENCIA_SRU
     global segundos, frames, nivel    
-
+    global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
+    
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
 
-    segundos = 0
     frames = 5
-    nivel = 0
+    
     # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
-    INDEX = 0
-    REFERENCIA_SRU = 0.0
-    
     fullpath = obtemArquivos()
-    REFERENCIA_SRU, DADOS = processarArquivo(fullpath)
-    print("Referencia SRU = ", REFERENCIA_SRU)
+    TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
+    
+    REFERENCIA_SRU = max(maiorValorX - menorValorX, maiorValorY - menorValorY, 1)
 
-    # Ajusta SRU com base no valor
-    half = REFERENCIA_SRU / 10
+    margem = 20 
+
+    left = menorValorX - margem + panX
+    right = maiorValorX + margem + panX
+    bottom = menorValorY - margem + panY
+    top = maiorValorY + margem + panY
     
-    left = 0
-    right = half
-    bottom = 0
-    top = half
+    xTriangulo += maiorValorX / 2
+    yTriangulo += maiorValorY / 2
     
-    xTriangulo += 3 * REFERENCIA_SRU
-    yTriangulo += 3 * REFERENCIA_SRU
-    
-    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
+    gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
 
     return
