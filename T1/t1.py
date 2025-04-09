@@ -84,7 +84,6 @@ top = 0
 bottom = 0
 panX = 0
 panY = 0
-REFERENCIA_SRU: float = 0.0
 maiorValorX: int = 0
 maiorValorY: int = 0
 menorValorX: int = 0
@@ -198,8 +197,8 @@ def processarArquivo(filename):
     with open(filename, 'r') as file:
         linhas = file.readlines()
 
-    # Primeiro valor = referencia SRU (linha 1) ? 
-    referencia_SRU = int(linhas[0].replace('[', '').replace(']', '').strip())
+    # Primeiro valor = frames (linha 1) ? 
+    nummeroTotalFrames = int(linhas[0].replace('[', '').replace(']', '').strip())
 
     dados = []
 
@@ -233,7 +232,7 @@ def processarArquivo(filename):
         menorValorX = min(map(lambda trio: trio[0], novos_trios))
         menorValorY = min(map(lambda trio: trio[1], novos_trios))
         
-    return referencia_SRU, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
+    return nummeroTotalFrames, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
 def gerarCor():
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
@@ -263,21 +262,8 @@ def Desenha():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     
-    larguraMundo = maiorValorX - menorValorX
-    alturaMundo = maiorValorY - menorValorY
-    tamanhoMundo = max(larguraMundo, alturaMundo)
-
-    centroX = (maiorValorX + menorValorX) / 2 + panX
-    centroY = (maiorValorY + menorValorY) / 2 + panY
-
-    metadeTamanho = tamanhoMundo / 2 + margem
-
-    left = centroX - metadeTamanho
-    right = centroX + metadeTamanho
-    bottom = centroY - metadeTamanho
-    top = centroY + metadeTamanho
+    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
     
-    gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
 
     # Liam a janela de visualização com a cor branca
@@ -420,7 +406,7 @@ def Teclado(key: chr, x: int, y: int):
 
 # Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
-    global left, right, top, bottom, xTriangulo, yTriangulo
+    global panX, panY, xTriangulo, yTriangulo
     global idle_ativo
     
     if not idle_ativo: # interrompe 
@@ -432,17 +418,13 @@ def TeclasEspeciais(key: int, x: int, y: int):
     # para mover a câmera
     if glutGetModifiers() and GLUT_ACTIVE_CTRL:
         if key == GLUT_KEY_UP:              
-            top += deslocamentoCamera
-            bottom += deslocamentoCamera       
+            panY += deslocamentoCamera
         if key == GLUT_KEY_DOWN: 
-            top -= deslocamentoCamera
-            bottom -= deslocamentoCamera
+            panY -= deslocamentoCamera
         if key == GLUT_KEY_LEFT:
-            left -= deslocamentoCamera
-            right -= deslocamentoCamera
+            panX -= deslocamentoCamera
         if key == GLUT_KEY_RIGHT:
-            left += deslocamentoCamera
-            right += deslocamentoCamera
+            panX += deslocamentoCamera
             
     # para mover personagem
     # 2 direcoes (diagonais)
@@ -493,7 +475,7 @@ def obtemArquivos():
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
-    global DADOS, INDEX, TOTAL_FRAMES, REFERENCIA_SRU
+    global DADOS, INDEX, TOTAL_FRAMES
     global segundos, frames, nivel    
     global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
     
@@ -504,23 +486,24 @@ def Inicializa():
     fullpath = obtemArquivos()
     TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
     
+    # constantes
     frames = 5
-    REFERENCIA_SRU = max(maiorValorX - menorValorX, maiorValorY - menorValorY, 1)
     margem = 20 
+
+    # proporcao
+    proporcao = 0.05
+    
+    
     
     larguraMundo = maiorValorX - menorValorX
     alturaMundo = maiorValorY - menorValorY
-    tamanhoMundo = max(larguraMundo, alturaMundo)
-    
-    centroX = (maiorValorX + menorValorX) / 2 + panX
-    centroY = (maiorValorY + menorValorY) / 2 + panY
+    maiorTamanhoMundo = max(larguraMundo, alturaMundo)
+    metadeTamanho = maiorTamanhoMundo / 2
 
-    metadeTamanho = tamanhoQuadrado / 2 + margem
-
-    left = centroX - metadeTamanho
-    right = centroX + metadeTamanho
-    bottom = centroY - metadeTamanho
-    top = centroY + metadeTamanho
+    left = 0 + panX - margem
+    right = metadeTamanho + panX + margem
+    bottom = 0 + panY - margem
+    top = metadeTamanho + panY + margem
     
     xTriangulo = metadeTamanho
     yTriangulo = metadeTamanho
