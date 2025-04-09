@@ -196,10 +196,13 @@ def processarArquivo(filename):
     with open(filename, 'r') as file:
         linhas = file.readlines()
 
-    # Primeiro valor = referencia SRU (linha 1)
+    # Primeiro valor = referencia SRU (linha 1) ? 
     referencia_SRU = int(linhas[0].replace('[', '').replace(']', '').strip())
 
     dados = []
+
+    maiorValorX, maiorValorY = 0, 0
+    menorValorX, menorValorY = 0, 0
 
     # Processar as demais linhas
     for linha in linhas[1:]:
@@ -212,21 +215,29 @@ def processarArquivo(filename):
 
         # Captura os trios dentro dos parênteses
         trios = re.findall(r"\((\d+),(\d+),(\d+)\)", linha)
-        trios = [tuple(map(int, trio)) for trio in trios]  # Converte para inteiros
+        
+        # Converte os valores de string para inteiros, um por um
+        novos_trios = []
+        for trio in trios:
+            novo_trio = ()
+            for numero in trio:
+                numero_inteiro = int(numero)    
+                novo_trio += (numero_inteiro,)  # adiciona tupla final
+            novos_trios.append(novo_trio)       # adiciona o trio final na nova lista
 
-        # Adiciona ao resultado
-        dados.append({"id": id_linha, "trios": trios})
+        # Adiciona ao resultado de retorno
+        dados.append({"id": id_linha, "trios": novos_trios})
 
     return referencia_SRU, dados
 
-def gerarCorPorID(id_valor):
+def gerarCorPorID():
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
     # https://stackoverflow.com/questions/69719050/i-am-trying-to-exclude-the-color-black-when-picking-random-colors
     # https://stackoverflow.com/questions/1168260/algorithm-for-generating-unique-colors
     
-    r = ((id_valor * 37) % 230 + 10) / 255.0  
-    g = ((id_valor * 59) % 230 + 10) / 255.0
-    b = ((id_valor * 83) % 230 + 10) / 255.0
+    r = ((1 * 37) % 230 + 10) / 255.0  
+    g = ((1 * 59) % 230 + 10) / 255.0
+    b = ((1 * 83) % 230 + 10) / 255.0
 
     # Evita tons muito escuros ou muito claros
     brilho = r + g + b
@@ -264,7 +275,7 @@ def Desenha():
         if trios:
             x, y, z = trios[INDEX % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
             ponto = Ponto(x, y, z)
-            r, g, b = gerarCorPorID(id_valor)  
+            r, g, b = gerarCorPorID()  
             cor = RGB(r, g, b) 
             quadrado = Quadrado(ponto, tamanhoQuadrado, tamanhoQuadrado, cor)
             
