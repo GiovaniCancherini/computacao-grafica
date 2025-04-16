@@ -62,6 +62,7 @@ class Quadrado():
 ####################################
 # Variáveis globais
 DADOS = []
+TOTAL_FRAMES: int = 0
 INDEX: int = 0
 SCORE: int = 0
 idle_ativo = True
@@ -83,11 +84,15 @@ top = 0
 bottom = 0
 panX = 0
 panY = 0
-REFERENCIA_SRU: float = 0.0
+maiorValorX: int = 0
+maiorValorY: int = 0
+menorValorX: int = 0
+menorValorY: int = 0
+margem: int = 0
 ####################################
 # Variáveis do triagulo
-xTriangulo: float = 1.0
-yTriangulo: float = 1.0
+xTriangulo: float = 0.0
+yTriangulo: float = 0.0
 tamanhoQuadrado = 50
 tamanhoTriangulo = 50
 ####################################
@@ -121,7 +126,7 @@ def boundingBox(triangulo_pos, triangulo_tam, quadrado_pos, quadrado_tam):
     return True
 
 def verificarColisoes():
-    global DADOS, INDEX, REFERENCIA_SRU
+    global DADOS, INDEX
     global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
     colisoes = []
     
@@ -160,32 +165,28 @@ def desenhaEixos():
     return
     
 def desenhaQuadrilatero(quadrado: Quadrado):
-    global REFERENCIA_SRU
-    
     glColor3f(quadrado.cor.r, quadrado.cor.g, quadrado.cor.b)
     
     glPushMatrix()
-    glTranslate(quadrado.ponto.x / REFERENCIA_SRU, quadrado.ponto.y / REFERENCIA_SRU, 0)
+    glTranslate(quadrado.ponto.x, quadrado.ponto.y, 0)
     glBegin(GL_QUADS)    
     glVertex2f(0, 0)
-    glVertex2f(quadrado.w / REFERENCIA_SRU, 0)
-    glVertex2f(quadrado.w / REFERENCIA_SRU, quadrado.h / REFERENCIA_SRU)
-    glVertex2f(0, quadrado.h / REFERENCIA_SRU)
+    glVertex2f(quadrado.w, 0)
+    glVertex2f(quadrado.w, quadrado.h)
+    glVertex2f(0, quadrado.h)
     glEnd()
     glPopMatrix()
     
 def desenhaTriangulo(triangulo: Quadrado): 
-    global REFERENCIA_SRU
-
     glColor3f(triangulo.cor.r, triangulo.cor.g, triangulo.cor.b)
     
     glPushMatrix()
-    glTranslate(triangulo.ponto.x / REFERENCIA_SRU, triangulo.ponto.y / REFERENCIA_SRU, 0)
+    glTranslate(triangulo.ponto.x, triangulo.ponto.y, 0)
     glBegin(GL_TRIANGLES)
     
     glVertex2f(0, 0)
-    glVertex2f(triangulo.w / REFERENCIA_SRU, 0)
-    glVertex2f((triangulo.w / 2) / REFERENCIA_SRU, triangulo.h / REFERENCIA_SRU)
+    glVertex2f(triangulo.w, 0)
+    glVertex2f((triangulo.w / 2), triangulo.h)
     
     glEnd()
     glPopMatrix()
@@ -196,8 +197,8 @@ def processarArquivo(filename):
     with open(filename, 'r') as file:
         linhas = file.readlines()
 
-    # Primeiro valor = referencia SRU (linha 1)
-    referencia_SRU = int(linhas[0].replace('[', '').replace(']', '').strip())
+    # Primeiro valor = frames (linha 1) ? 
+    nummeroTotalFrames = int(linhas[0].replace('[', '').replace(']', '').strip())
 
     dados = []
 
@@ -212,21 +213,35 @@ def processarArquivo(filename):
 
         # Captura os trios dentro dos parênteses
         trios = re.findall(r"\((\d+),(\d+),(\d+)\)", linha)
-        trios = [tuple(map(int, trio)) for trio in trios]  # Converte para inteiros
+        
+        # Converte os valores de string para inteiros, um por um
+        novos_trios = []
+        for trio in trios:
+            novo_trio = ()
+            for numero in trio:
+                numero_inteiro = int(numero)    
+                novo_trio += (numero_inteiro,)  # adiciona tupla final
+            novos_trios.append(novo_trio)       # adiciona o trio final na nova lista
 
-        # Adiciona ao resultado
-        dados.append({"id": id_linha, "trios": trios})
+        # Adiciona ao resultado de retorno
+        dados.append({"id": id_linha, "trios": novos_trios})
 
-    return referencia_SRU, dados
+        # arrow function em python para obter o maior e o menor valor
+        maiorValorX = max(map(lambda trio: trio[0], novos_trios))
+        maiorValorY = max(map(lambda trio: trio[1], novos_trios))
+        menorValorX = min(map(lambda trio: trio[0], novos_trios))
+        menorValorY = min(map(lambda trio: trio[1], novos_trios))
+        
+    return nummeroTotalFrames, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
-def gerarCorPorID(id_valor):
+def gerarCor():
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
     # https://stackoverflow.com/questions/69719050/i-am-trying-to-exclude-the-color-black-when-picking-random-colors
     # https://stackoverflow.com/questions/1168260/algorithm-for-generating-unique-colors
     
-    r = ((id_valor * 37) % 230 + 10) / 255.0  
-    g = ((id_valor * 59) % 230 + 10) / 255.0
-    b = ((id_valor * 83) % 230 + 10) / 255.0
+    r = ((1 * 37) % 230 + 10) / 255.0  
+    g = ((1 * 59) % 230 + 10) / 255.0
+    b = ((1 * 83) % 230 + 10) / 255.0
 
     # Evita tons muito escuros ou muito claros
     brilho = r + g + b
@@ -237,19 +252,22 @@ def gerarCorPorID(id_valor):
     
     return r, g, b
 
-
 # Função de redesenho da cena
 def Desenha():
     global left, right, top, bottom, panX, panY 
-    global DADOS, INDEX, REFERENCIA_SRU, nivel
+    global DADOS, INDEX, nivel
     global xTriangulo, yTriangulo, tamanhoQuadrado, tamanhoTriangulo
+    global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
     
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
+    
+    # Usar os valores de viewport ja calculados em Inicializa (com pan)
+    gluOrtho2D(left, right, bottom, top)
+    
     glMatrixMode(GL_MODELVIEW)
 
-    # Liam a janela de visualização com a cor branca
+    # Limpa a janela de visualização com a cor preta
     glClearColor(0, 0, 0, 1)
     glClear(GL_COLOR_BUFFER_BIT)
 
@@ -264,13 +282,12 @@ def Desenha():
         if trios:
             x, y, z = trios[INDEX % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
             ponto = Ponto(x, y, z)
-            r, g, b = gerarCorPorID(id_valor)  
+            r, g, b = gerarCor()  
             cor = RGB(r, g, b) 
             quadrado = Quadrado(ponto, tamanhoQuadrado, tamanhoQuadrado, cor)
             
             desenhaQuadrilatero(quadrado)
 
-    #######################################
     # desenha o triangulo controlavel
     ponto = Ponto(xTriangulo, yTriangulo, 0) # origem
     cor = RGB(1, 1, 1) # branco
@@ -280,8 +297,10 @@ def Desenha():
     #######################################
     glPushMatrix()
     glLoadIdentity()
-    # TODO: PRECISA COMENTAR ? glTranslate()
-    # TODO: desenhaEixos()
+    
+    # PRECISA COMENTAR ? glTranslate()
+    # mostrar os eixos
+    # desenhaEixos()
     glPopMatrix()
     
     # Executa os comandos OpenGl
@@ -389,31 +408,34 @@ def Teclado(key: chr, x: int, y: int):
 
 # Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
-    global left, right, top, bottom, xTriangulo, yTriangulo
-    global idle_ativo
+    global panX, panY, xTriangulo, yTriangulo
+    global idle_ativo, left, right, top, bottom
     
     if not idle_ativo: # interrompe 
         return
     
-    deslocamentoCamera:float = 0.1
+    deslocamentoCamera:float = 50.0  # amior
     deslocamento:float = 10
     
     # para mover a câmera
     if glutGetModifiers() and GLUT_ACTIVE_CTRL:
         if key == GLUT_KEY_UP:              
-            top += deslocamentoCamera
-            bottom += deslocamentoCamera       
+            panY += deslocamentoCamera
         if key == GLUT_KEY_DOWN: 
-            top -= deslocamentoCamera
-            bottom -= deslocamentoCamera
+            panY -= deslocamentoCamera
         if key == GLUT_KEY_LEFT:
-            left -= deslocamentoCamera
-            right -= deslocamentoCamera
+            panX -= deslocamentoCamera
         if key == GLUT_KEY_RIGHT:
-            left += deslocamentoCamera
-            right += deslocamentoCamera
+            panX += deslocamentoCamera
+        # atualizar as coordenadas do viewport apos o pan
+        left += panX
+        right += panX
+        top += panY
+        bottom += panY
+       
             
     # para mover personagem
+    
     # 2 direcoes (diagonais)
     if GLUT_KEY_UP in teclas_pressionadas and GLUT_KEY_RIGHT in teclas_pressionadas:
         xTriangulo += deslocamento
@@ -427,8 +449,9 @@ def TeclasEspeciais(key: int, x: int, y: int):
     elif GLUT_KEY_DOWN in teclas_pressionadas and GLUT_KEY_LEFT in teclas_pressionadas:
         xTriangulo -= deslocamento
         yTriangulo -= deslocamento
+    
+    # 1 direcao
     else:
-        # 1 direcao
         if key == GLUT_KEY_UP:           
             yTriangulo += deslocamento       
         if key == GLUT_KEY_DOWN: 
@@ -462,37 +485,49 @@ def obtemArquivos():
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
-    global DADOS, INDEX, REFERENCIA_SRU
+    global DADOS, INDEX, TOTAL_FRAMES
     global segundos, frames, nivel    
-
+    global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
+    
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-
-    segundos = 0
-    frames = 5
-    nivel = 0
-    # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
-    INDEX = 0
-    REFERENCIA_SRU = 0.0
     
+    # obtem os valores de referencia
     fullpath = obtemArquivos()
-    REFERENCIA_SRU, DADOS = processarArquivo(fullpath)
-    print("Referencia SRU = ", REFERENCIA_SRU)
-
-    # Ajusta SRU com base no valor
-    half = REFERENCIA_SRU / 10
+    TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
     
-    left = 0
-    right = half
-    bottom = 0
-    top = half
+    # constantes
+    frames = 5
+    margem = 100  # margem maior
     
-    xTriangulo += 3 * REFERENCIA_SRU
-    yTriangulo += 3 * REFERENCIA_SRU
+    # calcular a largura e altura do mundo
+    larguraMundo = maiorValorX - menorValorX + 2 * margem
+    alturaMundo = maiorValorY - menorValorY + 2 * margem
     
-    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
+    # determinar a maior dimensao para manter a proporção (janela quadrada)
+    maxDimensao = max(larguraMundo, alturaMundo)
+    
+    # calcular centro do mundo
+    centroX = (maiorValorX + menorValorX) / 2
+    centroY = (maiorValorY + menorValorY) / 2
+    
+    # calcular as bordas mantendo a proporcao
+    metadeLargura = maxDimensao / 2
+    metadeAltura = maxDimensao / 2
+    
+    # definir as bordas do viewport
+    left = centroX - metadeLargura + panX
+    right = centroX + metadeLargura + panX
+    bottom = centroY - metadeAltura + panY
+    top = centroY + metadeAltura + panY
+    
+    # posicionar o triangulo no centro do mundo
+    xTriangulo = centroX
+    yTriangulo = centroY
+    
+    gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
-
+    
     return
 
 # Função principal da aplicação
