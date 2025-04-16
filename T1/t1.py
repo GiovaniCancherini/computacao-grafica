@@ -234,23 +234,31 @@ def processarArquivo(filename):
         
     return nummeroTotalFrames, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
-def gerarCor():
+def gerarCorEntidadesMapeadas(seed):
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
     # https://stackoverflow.com/questions/69719050/i-am-trying-to-exclude-the-color-black-when-picking-random-colors
     # https://stackoverflow.com/questions/1168260/algorithm-for-generating-unique-colors
     
-    r = ((1 * 37) % 230 + 10) / 255.0  
-    g = ((1 * 59) % 230 + 10) / 255.0
-    b = ((1 * 83) % 230 + 10) / 255.0
-
-    # Evita tons muito escuros ou muito claros
-    brilho = r + g + b
-    if brilho < 0.4 or brilho > 2.6:
-        r = max(0.2, min(r * 1.2, 0.8))
-        g = max(0.2, min(g * 1.2, 0.8))
-        b = max(0.2, min(b * 1.2, 0.8))
+    cores_entidades = (
+            RGB(0.66, 1, 0),
+            RGB(1, 0.66, 00),
+            RGB(1, 0, 0.66),
+            RGB(0.66, 0, 1),
+            RGB(0, 0.66, 1)
+            ) # paleta de cores definida
     
-    return r, g, b
+    # normalizar as cores
+    # cores_entidades = [RGB(cor.r/255, cor.g/255, cor.b/255) for cor in cores_entidades]
+    
+    if seed is not None:
+        # Garantir que o index esteja no intervalo valido
+        index = seed % len(cores_entidades)
+        cor_selecionada = cores_entidades[index]
+    else:
+        cor_selecionada = random.choice(cores_entidades)
+    
+    # Retorna a cor selecionada dentro da paleta
+    return cor_selecionada
 
 # Função de redesenho da cena
 def Desenha():
@@ -261,7 +269,7 @@ def Desenha():
     
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    
+       
     # Usar os valores de viewport ja calculados em Inicializa (com pan)
     gluOrtho2D(left, right, bottom, top)
     
@@ -276,14 +284,13 @@ def Desenha():
     #######################################
     # desenha os quadrados
     for item in DADOS:
-        id_valor = item["id"]
+        num_frames_entidades = item["id"] # da pra usar com id
         trios = item["trios"]
 
         if trios:
             x, y, z = trios[INDEX % len(trios)] #trios[0],trios[1],trios[2],trios[3],trios[4],..
             ponto = Ponto(x, y, z)
-            r, g, b = gerarCor()  
-            cor = RGB(r, g, b) 
+            cor = gerarCorEntidadesMapeadas(num_frames_entidades)  
             quadrado = Quadrado(ponto, tamanhoQuadrado, tamanhoQuadrado, cor)
             
             desenhaQuadrilatero(quadrado)
