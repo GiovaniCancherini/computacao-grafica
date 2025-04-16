@@ -262,11 +262,12 @@ def Desenha():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     
-    gluOrtho2D(left + panX, right + panX, bottom + panY, top + panY)
+    # Usar os valores de viewport ja calculados em Inicializa (com pan)
+    gluOrtho2D(left, right, bottom, top)
     
     glMatrixMode(GL_MODELVIEW)
 
-    # Liam a janela de visualização com a cor branca
+    # Limpa a janela de visualização com a cor preta
     glClearColor(0, 0, 0, 1)
     glClear(GL_COLOR_BUFFER_BIT)
 
@@ -287,7 +288,6 @@ def Desenha():
             
             desenhaQuadrilatero(quadrado)
 
-    #######################################
     # desenha o triangulo controlavel
     ponto = Ponto(xTriangulo, yTriangulo, 0) # origem
     cor = RGB(1, 1, 1) # branco
@@ -297,8 +297,10 @@ def Desenha():
     #######################################
     glPushMatrix()
     glLoadIdentity()
-    # TODO: PRECISA COMENTAR ? glTranslate()
-    # TODO: desenhaEixos()
+    
+    # PRECISA COMENTAR ? glTranslate()
+    # mostrar os eixos
+    # desenhaEixos()
     glPopMatrix()
     
     # Executa os comandos OpenGl
@@ -407,12 +409,12 @@ def Teclado(key: chr, x: int, y: int):
 # Teclas especiais (setas) 
 def TeclasEspeciais(key: int, x: int, y: int):
     global panX, panY, xTriangulo, yTriangulo
-    global idle_ativo
+    global idle_ativo, left, right, top, bottom
     
     if not idle_ativo: # interrompe 
         return
     
-    deslocamentoCamera:float = 0.1
+    deslocamentoCamera:float = 50.0  # amior
     deslocamento:float = 10
     
     # para mover a câmera
@@ -425,8 +427,15 @@ def TeclasEspeciais(key: int, x: int, y: int):
             panX -= deslocamentoCamera
         if key == GLUT_KEY_RIGHT:
             panX += deslocamentoCamera
+        # atualizar as coordenadas do viewport apos o pan
+        left += panX
+        right += panX
+        top += panY
+        bottom += panY
+       
             
     # para mover personagem
+    
     # 2 direcoes (diagonais)
     if GLUT_KEY_UP in teclas_pressionadas and GLUT_KEY_RIGHT in teclas_pressionadas:
         xTriangulo += deslocamento
@@ -440,8 +449,9 @@ def TeclasEspeciais(key: int, x: int, y: int):
     elif GLUT_KEY_DOWN in teclas_pressionadas and GLUT_KEY_LEFT in teclas_pressionadas:
         xTriangulo -= deslocamento
         yTriangulo -= deslocamento
+    
+    # 1 direcao
     else:
-        # 1 direcao
         if key == GLUT_KEY_UP:           
             yTriangulo += deslocamento       
         if key == GLUT_KEY_DOWN: 
@@ -482,35 +492,42 @@ def Inicializa():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     
-    # Obtem o valor de referencia para o SRU e as coordenadas de todas as entidades
+    # obtem os valores de referencia
     fullpath = obtemArquivos()
     TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
     
     # constantes
     frames = 5
-    margem = 20 
-
-    # proporcao
-    proporcao = 0.05
+    margem = 100  # margem maior
     
+    # calcular a largura e altura do mundo
+    larguraMundo = maiorValorX - menorValorX + 2 * margem
+    alturaMundo = maiorValorY - menorValorY + 2 * margem
     
+    # determinar a maior dimensao para manter a proporção (janela quadrada)
+    maxDimensao = max(larguraMundo, alturaMundo)
     
-    larguraMundo = maiorValorX - menorValorX
-    alturaMundo = maiorValorY - menorValorY
-    maiorTamanhoMundo = max(larguraMundo, alturaMundo)
-    metadeTamanho = maiorTamanhoMundo / 2
-
-    left = 0 + panX - margem
-    right = metadeTamanho + panX + margem
-    bottom = 0 + panY - margem
-    top = metadeTamanho + panY + margem
+    # calcular centro do mundo
+    centroX = (maiorValorX + menorValorX) / 2
+    centroY = (maiorValorY + menorValorY) / 2
     
-    xTriangulo = metadeTamanho
-    yTriangulo = metadeTamanho
+    # calcular as bordas mantendo a proporcao
+    metadeLargura = maxDimensao / 2
+    metadeAltura = maxDimensao / 2
+    
+    # definir as bordas do viewport
+    left = centroX - metadeLargura + panX
+    right = centroX + metadeLargura + panX
+    bottom = centroY - metadeAltura + panY
+    top = centroY + metadeAltura + panY
+    
+    # posicionar o triangulo no centro do mundo
+    xTriangulo = centroX
+    yTriangulo = centroY
     
     gluOrtho2D(left, right, bottom, top)
     glMatrixMode(GL_MODELVIEW)
-
+    
     return
 
 # Função principal da aplicação
