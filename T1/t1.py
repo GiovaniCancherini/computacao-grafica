@@ -380,7 +380,7 @@ def Animacao():
             print("################## GAME OVER ##################")
             print("#                                             #")
             print("#             Voce perdeu o jogo!             #")
-            print("#              SUA PONTUACAO: ", SCORE)
+            print("#              SUA PONTUACAO: ", SCORE, "              #")
             print("#                                             #")
             print("###############################################")
             pygame.mixer.init()
