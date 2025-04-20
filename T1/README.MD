@@ -2,9 +2,6 @@
 
 ## Melhorias pendentes
 
-- Melhorar a função que define as cores para não depender do ID, mas sim do número de frames da entidade.
-- Revisar definições do arquivo de entrada.
-
 ---
 
 ## Configuração do ambiente
