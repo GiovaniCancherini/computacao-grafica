@@ -8,7 +8,8 @@ from Objeto3D import *
 
 o:Objeto3D
 tempo_antes = time.time()
-soma_dt = 0
+soma_dt, soma_dt2 = 0, 0
+segundos = 0
 
 def init():
     global o
@@ -125,19 +126,24 @@ def DesenhaCubo():
 
 # Função chamada constantemente (idle) para atualizar a animação
 def Animacao():
-    global soma_dt, tempo_antes
+    global soma_dt, tempo_antes, segundos, soma_dt2
 
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
     tempo_antes = tempo_agora
 
     soma_dt += delta_time
-
-    if soma_dt > 1.0 / 30:  # Aproximadamente 30 quadros por segundo
-        soma_dt = 0
-        
-        o.ProximaPos()
-        glutPostRedisplay()
+    soma_dt2 += delta_time
+    
+    if soma_dt2 > 1:  # contar 1 segundo
+        segundos += 1
+        soma_dt2 = 0
+    
+    if segundos > 1: # executa so apos x segundos
+        if soma_dt > 1.0 / 30:  # Aproximadamente 30 quadros por segundo
+            soma_dt = 0
+            o.ProximaPos()
+            glutPostRedisplay()
 
 def desenha():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -148,7 +154,7 @@ def desenha():
     #DesenhaCubo()    
     # o.Desenha()
     # o.DesenhaWireframe()
-    o.DesenhaVertices()
+    o.DesenhaVerticesEsfera()
 
     glutSwapBuffers()
     pass

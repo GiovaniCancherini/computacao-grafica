@@ -1,3 +1,4 @@
+import time
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import *
@@ -9,6 +10,7 @@ class Objeto3D:
         
     def __init__(self):
         self.vertices = []
+        self.verticesBckp = []
         self.faces    = []
         self.speed    = []
         self.angle    = []
@@ -30,6 +32,9 @@ class Objeto3D:
                 self.vertices.append(Ponto(float(values[1]),
                                            float(values[2]),
                                            float(values[3])))
+                self.verticesBckp.append(Ponto(float(values[1]),
+                                           float(values[2]),
+                                           float(values[3])))
                 self.speed.append((random.random() + 0.1))
                 
 
@@ -47,9 +52,29 @@ class Objeto3D:
                     # ignoramos textura e normal
                 
             # ignoramos outros tipos de items, no exercício não é necessário e vai só complicar mais
+        # self.verticesBckp = self.vertices.copy()
         pass
 
-    def DesenhaVertices(self):
+    def DesenhaVerticesEsfera(self):
+        glPushMatrix()
+        glTranslatef(self.position.x, self.position.y, self.position.z)
+        glRotatef(self.rotation[3], self.rotation[0], self.rotation[1], self.rotation[2])
+        glColor3f(.0, .0, .0)
+        glPointSize(8)
+
+        # glBegin(GL_POINTS)
+        for v in self.vertices:
+            glPushMatrix()
+            glTranslate(v.x, v.y, v.z)
+            glutSolidSphere(.05, 20, 20)
+            glPopMatrix()
+            # glVertex(v.x, v.y, v.z)
+        # glEnd()
+        
+        glPopMatrix()
+        pass
+    
+    def DesenhaVerticesCubos(self):
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
         glRotatef(self.rotation[3], self.rotation[0], self.rotation[1], self.rotation[2])
@@ -104,13 +129,30 @@ class Objeto3D:
 
     def ProximaPos(self):
         for i in range(len(self.vertices)):
-            self.angle[i] += self.speed[i] * (1/30)
 
-            x = self.radius[i] * math.cos(self.angle[i])
-            z = self.radius[i] * math.sin(self.angle[i])
+            # gira em torno do proprio eixo com velocidade angular
+            # self.angle[i] += self.speed[i] * (1/30)
+            # x = self.radius[i] * math.cos(self.angle[i])
+            # z = self.radius[i] * math.sin(self.angle[i])
 
+            # faz cada vertice "cair" de forma aleatoria e reinicia a face
+            randomNumberQueda = random.uniform(0.001, 0.3)
+            # novoY = self.vertices[i].y - randomNumber
+            # if novoY >= -5:
+            #     y = novoY
+            # else:
+            #     y = self.verticesBckp[i].y
+                
+            # randomNumberEspalhar = random.uniform(-0.1, 0.1)
+            x = self.vertices[i].x # + randomNumberEspalhar
+            y = self.vertices[i].y - randomNumberQueda
+            z = self.vertices[i].z # + randomNumberEspalhar
+            
+            # reescreve
             self.vertices[i].x = x
+            self.vertices[i].y = y
             self.vertices[i].z = z
-
+            
+            
 
 
