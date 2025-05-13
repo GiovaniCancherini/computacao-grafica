@@ -60,7 +60,7 @@ class Objeto3D:
         for v in self.vertices:
             glPushMatrix()
             glTranslate(v.x, v.y, v.z)
-            glutSolidSphere(.05, 20, 20)
+            glutSolidCube(0.05) # glutSolidSphere(.05, 20, 20)
             glPopMatrix()
             # glVertex(v.x, v.y, v.z)
         # glEnd()
