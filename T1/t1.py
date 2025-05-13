@@ -62,7 +62,7 @@ class Quadrado():
 ####################################
 # Variáveis globais
 DADOS = []
-TOTAL_FRAMES: int = 0
+VALOR_SRW: int = 0
 INDEX: int = 0
 SCORE: int = 0
 idle_ativo = True
@@ -198,7 +198,7 @@ def processarArquivo(filename):
         linhas = file.readlines()
 
     # Primeiro valor = frames (linha 1) ? 
-    nummeroTotalFrames = int(linhas[0].replace('[', '').replace(']', '').strip())
+    numeroSRW = int(linhas[0].replace('[', '').replace(']', '').strip())
 
     dados = []
 
@@ -232,7 +232,7 @@ def processarArquivo(filename):
         menorValorX = min(map(lambda trio: trio[0], novos_trios))
         menorValorY = min(map(lambda trio: trio[1], novos_trios))
         
-    return nummeroTotalFrames, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
+    return numeroSRW, dados, maiorValorX, maiorValorY, menorValorX, menorValorY
 
 def gerarCorEntidadesMapeadas(seed):
     # Gera componentes de cor RGB usando diferentes primos para dispersar melhor
@@ -380,7 +380,7 @@ def Animacao():
             print("################## GAME OVER ##################")
             print("#                                             #")
             print("#             Voce perdeu o jogo!             #")
-            print("#              SUA PONTUACAO: ", SCORE, "              #")
+            print("#              SUA PONTUACAO: ", SCORE, "             #")
             print("#                                             #")
             print("###############################################")
             pygame.mixer.init()
@@ -492,7 +492,7 @@ def obtemArquivos():
 # Inicializa a projeção ortográfica
 def Inicializa():
     global left, right, top, bottom, panX, panY, xTriangulo, yTriangulo
-    global DADOS, INDEX, TOTAL_FRAMES
+    global DADOS, INDEX, VALOR_SRW
     global segundos, frames, nivel    
     global maiorValorX, maiorValorY, menorValorX, menorValorY, margem
     
@@ -501,7 +501,7 @@ def Inicializa():
     
     # obtem os valores de referencia
     fullpath = obtemArquivos()
-    TOTAL_FRAMES, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
+    VALOR_SRW, DADOS, maiorValorX, maiorValorY, menorValorX, menorValorY = processarArquivo(fullpath)
     
     # constantes
     frames = 5
