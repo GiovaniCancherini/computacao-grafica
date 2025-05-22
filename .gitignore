@@ -1,3 +1,4 @@
 /opengl-venv
 /Brazil - BR
 *.zip
+__pycache__
