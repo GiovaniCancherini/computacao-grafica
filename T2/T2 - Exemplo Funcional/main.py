@@ -10,7 +10,6 @@ o:Objeto3D
 tempo_antes = time.time()
 soma_dt, soma_dt2 = 0, 0
 segundos = 0
-idle_ativo = True
 
 def init():
     global o
@@ -160,19 +159,10 @@ def desenha():
     glutSwapBuffers()
     pass
 
-# Função para teclado
-def teclado(key: chr, x: int, y: int):
-    global idle_ativo
+def teclado(key, x, y):
+    o.rotation = (1, 0, 0, o.rotation[3] + 2)    
 
-    # o.rotation = (1, 0, 0, o.rotation[3] + 2)    
-
-    if key == b'\x1b':  # esc
-        glutLeaveMainLoop() # solucao para sair da tela
-    # if key == b' ': # barra de espaço
-    if key == b'p':  # pausar/despausar
-        idle_ativo = not idle_ativo
-        
-    glutPostRedisplay() # Redesenha
+    glutPostRedisplay()
     pass
 
 def main():
