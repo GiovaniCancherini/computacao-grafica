@@ -4,9 +4,9 @@ from OpenGL.GL import *
 
 import time
 
-from Objeto3D import *
+from objeto3D import *
 
-o:Objeto3D
+o:objeto3D
 tempo_antes = time.time()
 soma_dt, soma_dt2 = 0, 0
 segundos = 0
@@ -22,14 +22,13 @@ def init():
     glEnable(GL_CULL_FACE)
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-    o = Objeto3D()
+    o = objeto3D()
     o.LoadFile('Human_Head.obj')
 
-    DefineLuz()
-    PosicUser()
+    defineLuz()
+    posicUser()
 
-
-def DefineLuz():
+def defineLuz():
     # Define cores para um objeto dourado
     luz_ambiente = [0.4, 0.4, 0.4]
     luz_difusa = [0.7, 0.7, 0.7]
@@ -64,7 +63,7 @@ def DefineLuz():
     # concentrado serÃ¡ o brilho. (Valores vÃ¡lidos: de 0 a 128)
     glMateriali(GL_FRONT, GL_SHININESS, 51)
 
-def PosicUser():
+def posicUser():
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
 
@@ -81,7 +80,7 @@ def PosicUser():
     # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
     gluLookAt(-2, 6, -8, 0, 0, 0, 0, 1.0, 0)
 
-def DesenhaLadrilho():
+def desenhaLadrilho():
     glColor3f(0.5, 0.5, 0.5)  # desenha QUAD preenchido
     glBegin(GL_QUADS)
     glNormal3f(0, 1, 0)
@@ -100,19 +99,19 @@ def DesenhaLadrilho():
     glVertex3f(0.5, 0.0, -0.5)
     glEnd()
 
-def DesenhaPiso():
+def desenhaPiso():
     glPushMatrix()
     glTranslated(-20, -1, -10)
     for x in range(-20, 20):
         glPushMatrix()
         for z in range(-20, 20):
-            DesenhaLadrilho()
+            desenhaLadrilho()
             glTranslated(0, 0, 1)
         glPopMatrix()
         glTranslated(1, 0, 0)
     glPopMatrix()
 
-def DesenhaCubo():
+def desenhaCubo():
     glPushMatrix()
     glColor3f(1, 0, 0)
     glTranslated(0, 0.5, 0)
@@ -126,7 +125,7 @@ def DesenhaCubo():
     glPopMatrix()
 
 # Função chamada constantemente (idle) para atualizar a animação
-def Animacao():
+def animacao():
     global soma_dt, tempo_antes, segundos, soma_dt2
 
     tempo_agora = time.time()
@@ -151,8 +150,8 @@ def desenha():
 
     glMatrixMode(GL_MODELVIEW)
 
-    DesenhaPiso()
-    #DesenhaCubo()    
+    desenhaPiso()
+    #desenhaCubo()    
     # o.Desenha()
     # o.DesenhaWireframe()
     o.DesenhaVerticesEsfera()
@@ -200,7 +199,7 @@ def main():
     # Registra a funcao callback para tratamento das teclas ASCII
     glutKeyboardFunc(teclado)
 
-    glutIdleFunc(Animacao)
+    glutIdleFunc(animacao)
 
     try:
         # Inicia o processamento e aguarda interacoes do usuario

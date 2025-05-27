@@ -1,14 +1,14 @@
 # ************************************************
-#   Ponto.py
-#   Define a classe Ponto
+#   ponto.py
+#   Define a classe ponto
 #   Autor: Márcio Sarroglia Pinho
 #       pinho@pucrs.br
 # ************************************************
 
 import math
 
-""" Classe Ponto """
-class Ponto:   
+""" Classe ponto """
+class ponto:   
     def __init__(self, x=0,y=0,z=0):
         self.x = x
         self.y = y
@@ -35,19 +35,19 @@ class Ponto:
             x = self.x + other.x
             y = self.y + other.y
             z = self.z + other.z
-            return Ponto(x, y, z)
+            return ponto(x, y, z)
 
     def __sub__(self, other):
             x = self.x - other.x
             y = self.y - other.y
             z = self.z - other.z
-            return Ponto(x, y, z)
+            return ponto(x, y, z)
 
     def __mul__(self, other: int):
             x = self.x * other
             y = self.y * other
             z = self.z * other
-            return Ponto(x, y, z)
+            return ponto(x, y, z)
 
     def rotacionaZ(self, angulo):
         anguloRad = angulo * 3.14159265359/180.0
@@ -85,7 +85,7 @@ class Ponto:
 # int, valor do parâmetro no ponto de interseção (sobre a reta MN)       */
 #                                                                        */
 # ********************************************************************** */
-def intersec2d(k: Ponto, l: Ponto, m: Ponto, n: Ponto) -> (int, float, float):
+def intersec2d(k: ponto, l: ponto, m: ponto, n: ponto) -> (int, float, float):
     det = (n.x - m.x) * (l.y - k.y)  -  (n.y - m.y) * (l.x - k.x)
 
     if (det == 0.0):
@@ -97,14 +97,13 @@ def intersec2d(k: Ponto, l: Ponto, m: Ponto, n: Ponto) -> (int, float, float):
     return 1, s, t # há intersecção
 
 # **********************************************************************
-# HaInterseccao(k: Ponto, l: Ponto, m: Ponto, n: Ponto)
+# HaInterseccao(k: ponto, l: ponto, m: ponto, n: ponto)
 # Detecta interseccao entre os pontos
 #
 # **********************************************************************
-def HaInterseccao(k: Ponto, l: Ponto, m: Ponto, n: Ponto) -> bool:
+def HaInterseccao(k: ponto, l: ponto, m: ponto, n: ponto) -> bool:
     ret, s, t = intersec2d( k,  l,  m,  n)
 
     if not ret: return False
 
     return s>=0.0 and s <=1.0 and t>=0.0 and t<=1.0
-

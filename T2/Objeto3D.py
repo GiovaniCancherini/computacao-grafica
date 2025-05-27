@@ -2,11 +2,11 @@ import time
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from OpenGL.GL import *
-from Ponto import *
+from ponto import *
 
 import random
 
-class Objeto3D:
+class objeto3D:
         
     def __init__(self):
         self.vertices = []
@@ -15,7 +15,7 @@ class Objeto3D:
         self.speed    = []
         self.angle    = []
         self.radius   = []
-        self.position = Ponto(0,0,0)
+        self.position = ponto(0,0,0)
         self.rotation = (0,0,0,0)
         pass
 
@@ -29,10 +29,10 @@ class Objeto3D:
 
             if values[0] == 'v': 
                 # item é um vértice, os outros elementos da linha são a posição dele
-                self.vertices.append(Ponto(float(values[1]),
+                self.vertices.append(ponto(float(values[1]),
                                            float(values[2]),
                                            float(values[3])))
-                self.verticesBckp.append(Ponto(float(values[1]),
+                self.verticesBckp.append(ponto(float(values[1]),
                                            float(values[2]),
                                            float(values[3])))
                 self.speed.append((random.random() + 0.1))
@@ -152,7 +152,3 @@ class Objeto3D:
             self.vertices[i].x = x
             self.vertices[i].y = y
             self.vertices[i].z = z
-            
-            
-
-

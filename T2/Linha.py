@@ -1,6 +1,6 @@
 # ************************************************
-#   Linha.py
-#   Define a classe Linha
+#   linha.py
+#   Define a classe linha
 #   Autor: Márcio Sarroglia Pinho
 #       pinho@pucrs.br
 # ************************************************
@@ -8,19 +8,19 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-from Ponto import Ponto
+from ponto import ponto
 
 from random import randint as rand
 
-""" Classe Linha """
-class Linha:
-    def __init__(self, a: Ponto, b: Ponto):
+""" Classe linha """
+class linha:
+    def __init__(self, a: ponto, b: ponto):
         self.a = a
         self.b = b
 
     def __init__(self, x1: float = 0, y1: float = 0, z1 : float = 0, x2: float = 0, y2: float = 0, z2: float = 0):
-        self.a = Ponto(x1, y1, z1)
-        self.b = Ponto(x2, y2, z2)
+        self.a = ponto(x1, y1, z1)
+        self.b = ponto(x2, y2, z2)
 
     """ Desenha a linha na tela atual """
     def desenhaLinha(self):
