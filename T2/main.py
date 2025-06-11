@@ -28,6 +28,7 @@ def init():
 
     defineLuz()
     posicUser()
+    glutReshapeFunc(reshape)
 
 def defineLuz():
     # Define cores para um objeto dourado
@@ -65,13 +66,6 @@ def defineLuz():
     glMateriali(GL_FRONT, GL_SHININESS, 51)
 
 def posicUser():
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-
-    # Configura a matriz da projeção perspectiva (FOV, proporção da tela, distância do mínimo antes do clipping, distância máxima antes do clipping
-    # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluPerspective.xml
-    gluPerspective(60, 16/9, 0.01, 50)  # Projecao perspectiva
-    glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
 
     #Especifica a matriz de transformação da visualização
@@ -81,6 +75,12 @@ def posicUser():
     # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
     gluLookAt(-2, 6, -8, 0, 0, 0, 0, 1.0, 0)
 
+def definePerspectiva(w, h):
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(60, w/h, 0.1, 50.0)
+    glMatrixMode(GL_MODELVIEW)
+    
 def desenhaLadrilho():
     glColor3f(0.5, 0.5, 0.5)  # desenha QUAD preenchido
     glBegin(GL_QUADS)
@@ -207,9 +207,17 @@ def teclado(key: chr, x: int, y: int):
     elif key == b'right':
         glTranslatef(0.1, 0, 0)
     elif key == b'r':  # reset camera
-        posicUser()
+        reshape(16, 9)
         
     glutPostRedisplay() # Redesenha
+    pass
+
+def reshape(w, h):
+    if h == 0:
+        h = 1  # evitar divisão por zero
+
+    glViewport(0, 0, w, h)
+    definePerspectiva(w, h)
     pass
 
 def main():
