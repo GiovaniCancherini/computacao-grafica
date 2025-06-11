@@ -11,6 +11,11 @@ tempo_antes = time.time()
 soma_dt, soma_dt2 = 0, 0
 segundos = 0
 idle_ativo = True
+estado = 0
+ESTADO_INICIAL = 0
+ESTADO_DISSOLUCAO = 1
+ESTADO_S = 2
+ESTADO_CORACAO = 3
 
 def init():
     global o
@@ -126,7 +131,10 @@ def desenhaCubo():
 
 # Função chamada constantemente (idle) para atualizar a animação
 def animacao():
-    global soma_dt, tempo_antes, segundos, soma_dt2
+    global soma_dt, tempo_antes, segundos, soma_dt2, estado, idle_ativo
+    
+    if not idle_ativo:
+        return
 
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
@@ -139,11 +147,20 @@ def animacao():
         segundos += 1
         soma_dt2 = 0
     
-    if segundos > 1: # executa so apos x segundos
-        if soma_dt > 1.0 / 30:  # Aproximadamente 30 quadros por segundo
-            soma_dt = 0
-            o.ProximaPos()
-            glutPostRedisplay()
+    if segundos < 3:
+        estado = ESTADO_INICIAL
+    elif segundos < 13:
+        estado = ESTADO_DISSOLUCAO
+    elif segundos < 18:
+        estado = ESTADO_S
+    else:
+        estado = ESTADO_CORACAO
+        
+    if soma_dt > 1.0 / 30:  # Aproximadamente 30 quadros por segundo
+        soma_dt = 0
+        o.ProximaPos(estado)
+        glutPostRedisplay()
+
 
 def desenha():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -161,15 +178,22 @@ def desenha():
 
 # Função para teclado
 def teclado(key: chr, x: int, y: int):
-    global idle_ativo
-
-    # o.rotation = (1, 0, 0, o.rotation[3] + 2)    
+    global idle_ativo, o
 
     if key == b'\x1b':  # esc
         glutLeaveMainLoop() # solucao para sair da tela
     # if key == b' ': # barra de espaço
     if key == b'p':  # pausar/despausar
         idle_ativo = not idle_ativo
+      
+    if key == b'w':
+        o.position.y += 0.1
+    elif key == b's':
+        o.position.y -= 0.1
+    elif key == b'a':
+        o.position.x -= 0.1
+    elif key == b'd':
+        o.position.x += 0.1
         
     glutPostRedisplay() # Redesenha
     pass

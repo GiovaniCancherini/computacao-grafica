@@ -11,49 +11,40 @@ class objeto3D:
     def __init__(self):
         self.vertices = []
         self.verticesBckp = []
-        self.faces    = []
-        self.speed    = []
-        self.angle    = []
-        self.radius   = []
-        self.position = ponto(0,0,0)
-        self.rotation = (0,0,0,0)
-        pass
+        self.faces = []
+        self.speed = []
+        self.angle = []
+        self.radius = []
+        self.position = ponto(0, 0, 0)
+        self.rotation = (0, 0, 0, 0)
 
-    def LoadFile(self, file:str):
+        # Novas listas de apoio
+        self.velocidadeY = []
+        self.destinoS = []
+        self.destinoCoracao = []
+
+        # Controle de estados já inicializados
+        self.inicializou_dissolucao = False
+        self.inicializou_S = False
+        self.inicializou_coracao = False
+
+    def LoadFile(self, file: str):
         f = open(file, "r")
-
-        # leitor de .obj baseado na descrição em https://en.wikipedia.org/wiki/Wavefront_.obj_file    
         for line in f:
             values = line.split(' ')
-            # dividimos a linha por ' ' e usamos o primeiro elemento para saber que tipo de item temos
-
-            if values[0] == 'v': 
-                # item é um vértice, os outros elementos da linha são a posição dele
-                self.vertices.append(ponto(float(values[1]),
-                                           float(values[2]),
-                                           float(values[3])))
-                self.verticesBckp.append(ponto(float(values[1]),
-                                           float(values[2]),
-                                           float(values[3])))
+            if values[0] == 'v':
+                self.vertices.append(ponto(float(values[1]), float(values[2]), float(values[3])))
+                self.verticesBckp.append(ponto(float(values[1]), float(values[2]), float(values[3])))
                 self.speed.append((random.random() + 0.1))
-                
-
                 self.angle.append(math.atan2(float(values[3]), float(values[1])))
                 self.radius.append(math.hypot(float(values[1]), float(values[3])))
 
-
             if values[0] == 'f':
-                # item é uma face, os outros elementos da linha são dados sobre os vértices dela
                 self.faces.append([])
                 for fVertex in values[1:]:
                     fInfo = fVertex.split('/')
-                    # dividimos cada elemento por '/'
-                    self.faces[-1].append(int(fInfo[0]) - 1) # primeiro elemento é índice do vértice da face
-                    # ignoramos textura e normal
-                
-            # ignoramos outros tipos de items, no exercício não é necessário e vai só complicar mais
-        # self.verticesBckp = self.vertices.copy()
-        pass
+                    self.faces[-1].append(int(fInfo[0]) - 1)
+        f.close()
 
     def DesenhaVerticesEsfera(self):
         glPushMatrix()
@@ -127,28 +118,65 @@ class objeto3D:
         glPopMatrix()
         pass
 
-    def ProximaPos(self):
-        for i in range(len(self.vertices)):
+    def inicializaDissolucao(self):
+        gravidade = 0.01
+        self.velocidadeY = [gravidade for _ in self.vertices]
+        self.inicializou_dissolucao = True
 
-            # gira em torno do proprio eixo com velocidade angular
-            # self.angle[i] += self.speed[i] * (1/30)
-            # x = self.radius[i] * math.cos(self.angle[i])
-            # z = self.radius[i] * math.sin(self.angle[i])
+    def inicializaDestinoS(self):
+        self.destinoS = []
+        total = len(self.vertices)
+        for i, v in enumerate(self.vertices):
+            t = (i / total) * 2 * math.pi  # Parametrização no intervalo 0..2pi
+            x = math.sin(t) * 2
+            y = math.sin(t * 0.5 + math.pi / 2) * 2  # Combinação senoidal para fazer o "S"
+            z = 0
+            self.destinoS.append(ponto(x, y, z))
+        self.inicializou_S = True
 
-            # faz cada vertice "cair" de forma aleatoria e reinicia a face
-            randomNumberQueda = random.uniform(0.001, 0.3)
-            # novoY = self.vertices[i].y - randomNumber
-            # if novoY >= -5:
-            #     y = novoY
-            # else:
-            #     y = self.verticesBckp[i].y
+    def inicializaDestinoCoracao(self):
+        self.destinoCoracao = []
+        for i, v in enumerate(self.vertices):
+            t = (i / len(self.vertices)) * 2 * math.pi
+            x = 16 * math.sin(t) ** 3 / 16
+            y = (13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)) / 16
+            z = 0
+            self.destinoCoracao.append(ponto(x, y, z))
+        self.inicializou_coracao = True
                 
-            # randomNumberEspalhar = random.uniform(-0.1, 0.1)
-            x = self.vertices[i].x # + randomNumberEspalhar
-            y = self.vertices[i].y - randomNumberQueda
-            z = self.vertices[i].z # + randomNumberEspalhar
-            
-            # reescreve
-            self.vertices[i].x = x
-            self.vertices[i].y = y
-            self.vertices[i].z = z
+    def ProximaPos(self, estado):
+        for i in range(len(self.vertices)):
+            match estado:
+                case 0:
+                    self.vertices[i].x = self.verticesBckp[i].x
+                    self.vertices[i].y = self.verticesBckp[i].y
+                    self.vertices[i].z = self.verticesBckp[i].z
+
+                case 1:
+                    if not self.inicializou_dissolucao:
+                        self.inicializaDissolucao()
+
+                    self.vertices[i].y += self.velocidadeY[i]
+                    self.velocidadeY[i] -= 0.01
+
+                    if self.vertices[i].y <= 0:
+                        self.vertices[i].y = 0
+                        self.velocidadeY[i] *= -0.7
+
+                case 2:
+                    if not self.inicializou_S:
+                        self.inicializaDestinoS()
+
+                    destino = self.destinoS[i]
+                    self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
+                    self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
+                    self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
+
+                case 3:
+                    if not self.inicializou_coracao:
+                        self.inicializaDestinoCoracao()
+
+                    destino = self.destinoCoracao[i]
+                    self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
+                    self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
+                    self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
