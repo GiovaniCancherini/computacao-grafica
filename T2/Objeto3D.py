@@ -18,6 +18,7 @@ class objeto3D:
         self.position = ponto(0, 0, 0)
         self.rotation = (0, 0, 0, 0)
 
+        self.gravidade = 0.01
         # Novas listas de apoio
         self.velocidadeY = []
         self.destinoS = []
@@ -119,8 +120,7 @@ class objeto3D:
         pass
 
     def inicializaDissolucao(self):
-        gravidade = 0.01
-        self.velocidadeY = [gravidade for _ in self.vertices]
+        self.velocidadeY = [self.gravidade for _ in self.vertices]
         self.inicializou_dissolucao = True
 
     def inicializaDestinoS(self):
@@ -157,10 +157,11 @@ class objeto3D:
                         self.inicializaDissolucao()
 
                     self.vertices[i].y += self.velocidadeY[i]
-                    self.velocidadeY[i] -= 0.01
+                    self.velocidadeY[i] -= self.gravidade
 
                     if self.vertices[i].y <= 0:
                         self.vertices[i].y = 0
+                        self.vertices[i].x += random.uniform(-0.1, 0.1)
                         self.velocidadeY[i] *= -0.7
 
                 case 'ESTADO_S':
