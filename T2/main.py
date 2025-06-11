@@ -6,12 +6,18 @@ import time
 
 from objeto3D import *
 
+# globais
 o:objeto3D
 tempo_antes = time.time()
 soma_dt, soma_dt2 = 0, 0
 segundos = 0
+# globais - tempo
 idle_ativo = True
 estado = ''
+# globais - camera
+cameraX = -2.0
+cameraY = 6.0
+cameraZ = -8.0
 
 def init():
     global o
@@ -73,7 +79,7 @@ def posicUser():
     # As três próximas especificam o ponto de foco nos eixos x, y e z
     # As três últimas especificam o vetor up
     # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
-    gluLookAt(-2, 6, -8, 0, 0, 0, 0, 1.0, 0)
+    gluLookAt(cameraX, cameraY, cameraZ, 0, 0, 0, 0, 1.0, 0)
 
 def definePerspectiva(w, h):
     glMatrixMode(GL_PROJECTION)
@@ -163,6 +169,8 @@ def desenha():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+    posicUser()
 
     desenhaPiso()
     #desenhaCubo()    
@@ -175,7 +183,7 @@ def desenha():
 
 # Função para teclado
 def teclado(key: chr, x: int, y: int):
-    global segundos, idle_ativo, o
+    global segundos, idle_ativo, o, cameraX, cameraY, cameraZ
 
     # controles
     if key == b'\x1b':  # ESC
@@ -188,7 +196,7 @@ def teclado(key: chr, x: int, y: int):
         segundos += 1
       
     # movimento objeto
-    if key == b'w':
+    elif key == b'w':
         o.position.y += 0.1
     elif key == b's':
         o.position.y -= 0.1
@@ -198,16 +206,31 @@ def teclado(key: chr, x: int, y: int):
         o.position.x += 0.1
         
     # movimento camera
-    if key == b'up':
-        glTranslatef(0, 0.1, 0)
-    elif key == b'down':
-        glTranslatef(0, -0.1, 0)
-    elif key == b'left':
-        glTranslatef(-0.1, 0, 0)
-    elif key == b'right':
-        glTranslatef(0.1, 0, 0)
-    elif key == b'r':  # reset camera
-        reshape(16, 9)
+    elif key == b'q':
+        cameraZ += 0.2  # zoom-out
+    elif key == b'e':
+        cameraZ -= 0.2  # zoom-in
+    elif key == b'r':   # reset
+        cameraX = -2.0
+        cameraY = 6.0
+        cameraZ = -8.0
+        
+    glutPostRedisplay() # Redesenha
+    pass
+
+# Função para teclado
+def teclasEspeciais(key: chr, x: int, y: int):
+    global segundos, idle_ativo, o, cameraX, cameraY, cameraZ
+ 
+    # movimento camera
+    if key == GLUT_KEY_UP:
+        cameraY += 0.1
+    elif key == GLUT_KEY_DOWN:
+        cameraY -= 0.1
+    elif key == GLUT_KEY_LEFT:
+        cameraX -= 0.1
+    elif key == GLUT_KEY_RIGHT:
+        cameraX += 0.1
         
     glutPostRedisplay() # Redesenha
     pass
@@ -244,7 +267,8 @@ def main():
 
     # Registra a funcao callback para tratamento das teclas ASCII
     glutKeyboardFunc(teclado)
-
+    glutSpecialFunc(teclasEspeciais)
+    
     glutIdleFunc(animacao)
 
     try:
