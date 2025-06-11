@@ -11,11 +11,7 @@ tempo_antes = time.time()
 soma_dt, soma_dt2 = 0, 0
 segundos = 0
 idle_ativo = True
-estado = 0
-ESTADO_INICIAL = 0
-ESTADO_DISSOLUCAO = 1
-ESTADO_S = 2
-ESTADO_CORACAO = 3
+estado = ''
 
 def init():
     global o
@@ -133,34 +129,35 @@ def desenhaCubo():
 def animacao():
     global soma_dt, tempo_antes, segundos, soma_dt2, estado, idle_ativo
     
-    if not idle_ativo:
-        return
-
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
     tempo_antes = tempo_agora
 
     soma_dt += delta_time
     soma_dt2 += delta_time
-    
-    if soma_dt2 > 1:  # contar 1 segundo
+
+    if not idle_ativo:
+        return  # está pausado, não faz nada
+
+    if soma_dt2 > 1:
         segundos += 1
         soma_dt2 = 0
-    
-    if segundos < 3:
-        estado = ESTADO_INICIAL
-    elif segundos < 13:
-        estado = ESTADO_DISSOLUCAO
-    elif segundos < 18:
-        estado = ESTADO_S
-    else:
-        estado = ESTADO_CORACAO
-        
-    if soma_dt > 1.0 / 30:  # Aproximadamente 30 quadros por segundo
-        soma_dt = 0
-        o.ProximaPos(estado)
-        glutPostRedisplay()
 
+    # atualiza a posição das partículas a cada frame (30 FPS aprox.)
+    if soma_dt > 1.0 / 30:
+        soma_dt = 0
+        # determina o estado com base no tempo atual
+        if segundos < 3:
+            estado = 'ESTADO_INICIAL'
+        elif segundos < 13:
+            estado = 'ESTADO_DISSOLUCAO'
+        elif segundos < 18:
+            estado = 'ESTADO_S'
+        else:
+            estado = 'ESTADO_CORACAO'
+
+        o.ProximaPos(estado)
+        glutPostRedisplay()       
 
 def desenha():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -178,14 +175,19 @@ def desenha():
 
 # Função para teclado
 def teclado(key: chr, x: int, y: int):
-    global idle_ativo, o
+    global segundos, idle_ativo, o
 
-    if key == b'\x1b':  # esc
-        glutLeaveMainLoop() # solucao para sair da tela
-    # if key == b' ': # barra de espaço
-    if key == b'p':  # pausar/despausar
+    # controles
+    if key == b'\x1b':  # ESC
+        glutLeaveMainLoop()
+    elif key == b'p':  # play/pause toggle
         idle_ativo = not idle_ativo
+    elif key == b'j':  # rewind
+        segundos = max(0, segundos - 1)  # não deixa passar de 0
+    elif key == b'l':  # forward
+        segundos += 1
       
+    # movimento objeto
     if key == b'w':
         o.position.y += 0.1
     elif key == b's':
@@ -194,6 +196,18 @@ def teclado(key: chr, x: int, y: int):
         o.position.x -= 0.1
     elif key == b'd':
         o.position.x += 0.1
+        
+    # movimento camera
+    if key == b'up':
+        glTranslatef(0, 0.1, 0)
+    elif key == b'down':
+        glTranslatef(0, -0.1, 0)
+    elif key == b'left':
+        glTranslatef(-0.1, 0, 0)
+    elif key == b'right':
+        glTranslatef(0.1, 0, 0)
+    elif key == b'r':  # reset camera
+        posicUser()
         
     glutPostRedisplay() # Redesenha
     pass

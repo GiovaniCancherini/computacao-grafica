@@ -147,12 +147,12 @@ class objeto3D:
     def ProximaPos(self, estado):
         for i in range(len(self.vertices)):
             match estado:
-                case 0:
+                case 'ESTADO_INICIAL':
                     self.vertices[i].x = self.verticesBckp[i].x
                     self.vertices[i].y = self.verticesBckp[i].y
                     self.vertices[i].z = self.verticesBckp[i].z
 
-                case 1:
+                case 'ESTADO_DISSOLUCAO':
                     if not self.inicializou_dissolucao:
                         self.inicializaDissolucao()
 
@@ -163,7 +163,7 @@ class objeto3D:
                         self.vertices[i].y = 0
                         self.velocidadeY[i] *= -0.7
 
-                case 2:
+                case 'ESTADO_S':
                     if not self.inicializou_S:
                         self.inicializaDestinoS()
 
@@ -172,7 +172,7 @@ class objeto3D:
                     self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
                     self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
 
-                case 3:
+                case 'ESTADO_CORACAO':
                     if not self.inicializou_coracao:
                         self.inicializaDestinoCoracao()
 
