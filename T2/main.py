@@ -3,6 +3,7 @@ from OpenGL.GLU import *
 from OpenGL.GL import *
 
 import time
+import copy
 
 from objeto3D import *
 
@@ -18,6 +19,11 @@ estado = ''
 cameraX = -2.0
 cameraY = 6.0
 cameraZ = -8.0
+
+# hashmap
+historico = dict()
+frame_index = 0
+frame_visualizado = 0
 
 def init():
     global o
@@ -133,7 +139,9 @@ def desenhaCubo():
 
 # Função chamada constantemente (idle) para atualizar a animação
 def animacao():
-    global soma_dt, tempo_antes, segundos, soma_dt2, estado, idle_ativo
+    global soma_dt, tempo_antes, soma_dt2, segundos
+    global estado, idle_ativo
+    global frame_index, historico, frame_visualizado
     
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
@@ -153,9 +161,9 @@ def animacao():
     if soma_dt > 1.0 / 30:
         soma_dt = 0
         # determina o estado com base no tempo atual
-        if segundos < 3:
+        if segundos < 2:
             estado = 'ESTADO_INICIAL'
-        elif segundos < 13:
+        elif segundos < 12:
             estado = 'ESTADO_DISSOLUCAO'
         elif segundos < 18:
             estado = 'ESTADO_S'
@@ -163,9 +171,18 @@ def animacao():
             estado = 'ESTADO_CORACAO'
 
         o.ProximaPos(estado)
+        
+        # salva o estado atual no historico
+        historico[segundos] = copy.deepcopy(o)
+        
+        frame_visualizado = frame_index  # sincroniza o visual com o que foi renderizado
+        frame_index += 1
+
         glutPostRedisplay()       
 
 def desenha():
+    global o, historico, frame_visualizado
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glMatrixMode(GL_MODELVIEW)
@@ -173,27 +190,29 @@ def desenha():
     posicUser()
 
     desenhaPiso()
-    #desenhaCubo()    
-    # o.Desenha()
-    # o.DesenhaWireframe()
-    o.DesenhaVerticesEsfera()
-
+    
+    if frame_visualizado in historico:
+        historico[frame_visualizado].DesenhaVerticesEsfera()
+    else:
+        o.DesenhaVerticesEsfera()
+        
     glutSwapBuffers()
     pass
 
 # Função para teclado
 def teclado(key: chr, x: int, y: int):
-    global segundos, idle_ativo, o, cameraX, cameraY, cameraZ
-
+    global idle_ativo, frame_visualizado, frame_index
+    global cameraX, cameraY, cameraZ
+    
     # controles
     if key == b'\x1b':  # ESC
         glutLeaveMainLoop()
     elif key == b'p':  # play/pause toggle
         idle_ativo = not idle_ativo
     elif key == b'j':  # rewind
-        segundos = max(0, segundos - 1)  # não deixa passar de 0
+        frame_visualizado = max(0, frame_visualizado - 1)  # não deixa passar de 0
     elif key == b'l':  # forward
-        segundos += 1
+        frame_visualizado = min(frame_visualizado + 1, frame_index - 1)
       
     # movimento objeto
     elif key == b'w':
