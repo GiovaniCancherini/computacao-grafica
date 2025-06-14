@@ -166,6 +166,10 @@ def animacao():
         elif segundos < 12:
             estado = 'ESTADO_DISSOLUCAO'
         elif segundos < 18:
+            estado = 'ESTADO_DISSOLUCAO'    # TODO: trocar aqui para o novo estado do redomoinho
+        elif segundos < 24:
+            estado = 'ESTADO_INICIAL'       # retorna a forma da cebeça apos o redomoinho  
+        elif segundos < 30:
             estado = 'ESTADO_S'
         else:
             estado = 'ESTADO_CORACAO'

@@ -129,7 +129,8 @@ class objeto3D:
         for i, v in enumerate(self.vertices):
             t = (i / total) * 2 * math.pi  # Parametrização no intervalo 0..2pi
             x = math.sin(t) * 2
-            y = math.sin(t * 0.5 + math.pi / 2) * 2  # Combinação senoidal para fazer o "S"
+            y = 1 + math.sin(t * 0.5 + math.pi / 2) * 2  # Combinação senoidal para fazer o "S"
+            # 1++ para elevar o "S" acima do plano
             z = 0
             self.destinoS.append(ponto(x, y, z))
         self.inicializou_S = True
