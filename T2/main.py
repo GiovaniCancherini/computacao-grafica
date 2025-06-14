@@ -159,6 +159,7 @@ def animacao():
 
     # atualiza a posição das partículas a cada frame (30 FPS aprox.)
     if soma_dt > 1.0 / 30:
+        # print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
         soma_dt = 0
         # determina o estado com base no tempo atual
         if segundos < 2:
@@ -175,9 +176,8 @@ def animacao():
             estado = 'ESTADO_CORACAO'
 
         o.ProximaPos(estado)
-        
         # salva o estado atual no historico
-        historico[segundos] = copy.deepcopy(o)
+        historico[frame_index] = copy.deepcopy(o)
         
         frame_visualizado = frame_index  # sincroniza o visual com o que foi renderizado
         frame_index += 1
@@ -185,7 +185,7 @@ def animacao():
         glutPostRedisplay()       
 
 def desenha():
-    global o, historico, frame_visualizado
+    global o, historico, frame_visualizado, frame_index, segundos
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -196,9 +196,11 @@ def desenha():
     desenhaPiso()
     
     if frame_visualizado in historico:
+        print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
         historico[frame_visualizado].DesenhaVerticesEsfera()
     else:
-        o.DesenhaVerticesEsfera()
+        print('OPAAA, frame_visualizado não encontrado no histórico:', frame_visualizado)
+        # o.DesenhaVerticesEsfera()
         
     glutSwapBuffers()
     pass
@@ -211,13 +213,21 @@ def teclado(key: chr, x: int, y: int):
     # controles
     if key == b'\x1b':  # ESC
         glutLeaveMainLoop()
+        
     elif key == b'p':  # play/pause toggle
         idle_ativo = not idle_ativo
+        if idle_ativo:
+            # ao retomar, reposiciona o gerador para continuar daquele frame visualizado
+            frame_index = frame_visualizado
+        
     elif key == b'j':  # rewind
-        frame_visualizado = max(0, frame_visualizado - 1)  # não deixa passar de 0
+        # define limite inferior
+        frame_visualizado = max(0, frame_visualizado - 1)
+            
     elif key == b'l':  # forward
-        frame_visualizado = min(frame_visualizado + 1, frame_index - 1)
-      
+        # define limite superior
+        frame_visualizado = min(frame_index - 1, frame_visualizado + 1)
+           
     # movimento objeto
     elif key == b'w':
         o.position.y += 0.1
