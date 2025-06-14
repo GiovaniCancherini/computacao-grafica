@@ -16,9 +16,9 @@ segundos = 0
 idle_ativo = True
 estado = ''
 # globais - camera
-cameraX = -2.0
-cameraY = 6.0
-cameraZ = -8.0
+cameraX = -1.0
+cameraY = 5.0
+cameraZ = -12.0
 
 # hashmap
 historico = dict()
