@@ -161,21 +161,22 @@ def animacao():
     if soma_dt > 1.0 / 30:
         # print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
         soma_dt = 0
+        
         # determina o estado com base no tempo atual
         if segundos < 2:
             estado = 'ESTADO_INICIAL'
         elif segundos < 12:
             estado = 'ESTADO_DISSOLUCAO'
         elif segundos < 18:
-            estado = 'ESTADO_DISSOLUCAO'    # TODO: trocar aqui para o novo estado do redomoinho
+            estado = 'ESTADO_TORNADO'       # novo estado do redomoinho
         elif segundos < 24:
-            estado = 'ESTADO_INICIAL'       # retorna a forma da cebeça apos o redomoinho  
+            estado = 'ESTADO_RESTAURACAO'   # retorna a forma da cebeça apos o redomoinho 
         elif segundos < 30:
             estado = 'ESTADO_S'
         else:
             estado = 'ESTADO_CORACAO'
 
-        o.ProximaPos(estado)
+        o.ProximaPos(estado, frame_index)
         # salva o estado atual no historico
         historico[frame_index] = copy.deepcopy(o)
         
@@ -193,13 +194,13 @@ def desenha():
     glLoadIdentity()
     posicUser()
 
-    desenhaPiso()
+    # desenhaPiso()
     
     if frame_visualizado in historico:
         print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
         historico[frame_visualizado].DesenhaVerticesEsfera()
     else:
-        print('OPAAA, frame_visualizado não encontrado no histórico:', frame_visualizado)
+        print('[ ERRO ] frame_visualizado não encontrado no histórico:', frame_visualizado)
         # o.DesenhaVerticesEsfera()
         
     glutSwapBuffers()
