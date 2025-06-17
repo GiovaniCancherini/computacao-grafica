@@ -19,11 +19,28 @@ estado = ''
 cameraX = -1.0
 cameraY = 5.0
 cameraZ = -12.0
-
+cameraAngleX = 0.0
+cameraAngleY = 0.0
 # hashmap
 historico = dict()
 frame_index = 0
 frame_visualizado = 0
+
+def determina_estado_por_frame(f: int):
+    tempo = f / 30.0  # 30 FPS
+    if tempo < 2:
+        return 'ESTADO_INICIAL'
+    elif tempo < 12:
+        return 'ESTADO_DISSOLUCAO'
+    elif tempo < 18:
+        return 'ESTADO_TORNADO'
+    elif tempo < 24:
+        return 'ESTADO_RESTAURACAO'
+    elif tempo < 30:
+        return 'ESTADO_S'
+    else:
+        return 'ESTADO_CORACAO'
+
 
 def init():
     global o
@@ -79,13 +96,9 @@ def defineLuz():
 
 def posicUser():
     glLoadIdentity()
-
-    #Especifica a matriz de transformação da visualização
-    # As três primeiras variáveis especificam a posição do observador nos eixos x, y e z
-    # As três próximas especificam o ponto de foco nos eixos x, y e z
-    # As três últimas especificam o vetor up
-    # https://registry.khronos.org/OpenGL-Refpages/gl2.1/xhtml/gluLookAt.xml
     gluLookAt(cameraX, cameraY, cameraZ, 0, 0, 0, 0, 1.0, 0)
+    glRotatef(cameraAngleY, 1.0, 0.0, 0.0)
+    glRotatef(cameraAngleX, 0.0, 1.0, 0.0)
 
 def definePerspectiva(w, h):
     glMatrixMode(GL_PROJECTION)
@@ -139,51 +152,30 @@ def desenhaCubo():
 
 # Função chamada constantemente (idle) para atualizar a animação
 def animacao():
-    global soma_dt, tempo_antes, soma_dt2, segundos
-    global estado, idle_ativo
-    global frame_index, historico, frame_visualizado
-    
+    global soma_dt, tempo_antes, estado
+    global frame_index, historico, frame_visualizado, idle_ativo
+
     tempo_agora = time.time()
     delta_time = tempo_agora - tempo_antes
     tempo_antes = tempo_agora
 
     soma_dt += delta_time
-    soma_dt2 += delta_time
 
     if not idle_ativo:
-        return  # está pausado, não faz nada
+        return
 
-    if soma_dt2 > 1:
-        segundos += 1
-        soma_dt2 = 0
-
-    # atualiza a posição das partículas a cada frame (30 FPS aprox.)
-    if soma_dt > 1.0 / 30:
-        # print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
+    if soma_dt > 1.0 / 120:
         soma_dt = 0
-        
-        # determina o estado com base no tempo atual
-        if segundos < 2:
-            estado = 'ESTADO_INICIAL'
-        elif segundos < 12:
-            estado = 'ESTADO_DISSOLUCAO'
-        elif segundos < 18:
-            estado = 'ESTADO_TORNADO'       # novo estado do redomoinho
-        elif segundos < 24:
-            estado = 'ESTADO_RESTAURACAO'   # retorna a forma da cebeça apos o redomoinho 
-        elif segundos < 30:
-            estado = 'ESTADO_S'
-        else:
-            estado = 'ESTADO_CORACAO'
 
+        estado = determina_estado_por_frame(frame_index)
         o.ProximaPos(estado, frame_index)
-        # salva o estado atual no historico
         historico[frame_index] = copy.deepcopy(o)
-        
-        frame_visualizado = frame_index  # sincroniza o visual com o que foi renderizado
+
+        frame_visualizado = frame_index
         frame_index += 1
 
-        glutPostRedisplay()       
+        glutPostRedisplay()
+ 
 
 def desenha():
     global o, historico, frame_visualizado, frame_index, segundos
@@ -208,28 +200,46 @@ def desenha():
 
 # Função para teclado
 def teclado(key: chr, x: int, y: int):
-    global idle_ativo, frame_visualizado, frame_index
-    global cameraX, cameraY, cameraZ
-    
-    # controles
-    if key == b'\x1b':  # ESC
+    global idle_ativo, frame_visualizado, frame_index, estado
+    global cameraX, cameraY, cameraZ, o, historico
+
+    if key == b'\x1b':
         glutLeaveMainLoop()
-        
+
     elif key == b'p':  # play/pause toggle
         idle_ativo = not idle_ativo
         if idle_ativo:
-            # ao retomar, reposiciona o gerador para continuar daquele frame visualizado
-            frame_index = frame_visualizado
-        
-    elif key == b'j':  # rewind
-        # define limite inferior
+            estado = determina_estado_por_frame(frame_visualizado)
+            frame_index = frame_visualizado + 1
+
+    elif key == b'[':
+        idle_ativo = False
         frame_visualizado = max(0, frame_visualizado - 1)
-            
-    elif key == b'l':  # forward
-        # define limite superior
-        frame_visualizado = min(frame_index - 1, frame_visualizado + 1)
-           
-    # movimento objeto
+
+    elif key == b',':
+        idle_ativo = False
+        frame_visualizado = max(0, frame_visualizado - 10)
+
+    elif key == b']':
+        idle_ativo = False
+        frame_visualizado = min(frame_visualizado + 1, frame_index + 1)
+        if frame_visualizado not in historico:
+            estado = determina_estado_por_frame(frame_visualizado)
+            o.ProximaPos(estado, frame_visualizado)
+            historico[frame_visualizado] = copy.deepcopy(o)
+        frame_index = max(frame_index, frame_visualizado + 1)
+
+    elif key == b'.':
+        idle_ativo = False
+        to_frame = min(frame_visualizado + 10, frame_index + 10)
+        for f in range(frame_visualizado + 1, to_frame + 1):
+            if f not in historico:
+                estado = determina_estado_por_frame(f)
+                o.ProximaPos(estado, f)
+                historico[f] = copy.deepcopy(o)
+        frame_visualizado = to_frame
+        frame_index = max(frame_index, frame_visualizado + 1)
+
     elif key == b'w':
         o.position.y += 0.1
     elif key == b's':
@@ -238,33 +248,33 @@ def teclado(key: chr, x: int, y: int):
         o.position.x -= 0.1
     elif key == b'd':
         o.position.x += 0.1
-        
-    # movimento camera
+
     elif key == b'q':
-        cameraZ += 0.2  # zoom-out
+        cameraZ += 0.2
     elif key == b'e':
-        cameraZ -= 0.2  # zoom-in
-    elif key == b'r':   # reset
+        cameraZ -= 0.2
+    elif key == b'r':
         cameraX = -2.0
         cameraY = 6.0
         cameraZ = -8.0
-        
-    glutPostRedisplay() # Redesenha
-    pass
+
+    glutPostRedisplay()
+
+
 
 # Função para teclado
 def teclasEspeciais(key: chr, x: int, y: int):
-    global segundos, idle_ativo, o, cameraX, cameraY, cameraZ
- 
+    global segundos, idle_ativo, o, cameraX, cameraY, cameraZ, cameraAngleX, cameraAngleY
+    cameraSpeed = 5
     # movimento camera
-    if key == GLUT_KEY_UP:
-        cameraY += 0.1
-    elif key == GLUT_KEY_DOWN:
-        cameraY -= 0.1
-    elif key == GLUT_KEY_LEFT:
-        cameraX -= 0.1
+    if key == GLUT_KEY_LEFT:
+        cameraAngleX -= cameraSpeed
     elif key == GLUT_KEY_RIGHT:
-        cameraX += 0.1
+        cameraAngleX += cameraSpeed
+    elif key == GLUT_KEY_UP:
+        cameraAngleY -= cameraSpeed
+    elif key == GLUT_KEY_DOWN:
+        cameraAngleY += cameraSpeed
         
     glutPostRedisplay() # Redesenha
     pass
