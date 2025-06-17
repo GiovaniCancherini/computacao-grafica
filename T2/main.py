@@ -152,7 +152,7 @@ def desenhaCubo():
 
 # Função chamada constantemente (idle) para atualizar a animação
 def animacao():
-    global soma_dt, tempo_antes, estado
+    global soma_dt, tempo_antes, estado, soma_dt2, segundos
     global frame_index, historico, frame_visualizado, idle_ativo
 
     tempo_agora = time.time()
@@ -160,9 +160,14 @@ def animacao():
     tempo_antes = tempo_agora
 
     soma_dt += delta_time
+    soma_dt2 += delta_time
 
     if not idle_ativo:
         return
+    
+    if soma_dt2 > 1:
+        segundos += 1
+        soma_dt2 = 0
 
     if soma_dt > 1.0 / 120:
         soma_dt = 0
