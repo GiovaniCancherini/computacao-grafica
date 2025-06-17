@@ -209,15 +209,24 @@ class objeto3D:
         relative_frame = frame_index - (12 * 30)
         t = min(relative_frame / 180, 1.0)  # 6s * 30fps
 
-        for i in range(len(self.vertices)):
-            angle_speed = 2.5 / (self.radii[i] + 0.1)
-            self.initAngles[i] += angle_speed * t * 0.1
-            self.vertices[i].x = self.radii[i] * math.cos(self.initAngles[i])
-            self.vertices[i].z = self.radii[i] * math.sin(self.initAngles[i])
-            self.vertices[i].y = self.initial_ys[i] + (5.0 * t)
+        max_raio = max(self.radii)
 
-            # Salva a posição final do tornado para restaurar suavemente
-        if t >= 1.0 and not self.restoreStart:  
+        for i in range(len(self.vertices)):
+            raio = self.radii[i]
+            angle_speed = 2.5 / (raio + 0.1)
+            self.initAngles[i] += angle_speed * t * 0.1
+
+            # Gira em espiral horizontal
+            self.vertices[i].x = raio * math.cos(self.initAngles[i])
+            self.vertices[i].z = raio * math.sin(self.initAngles[i])
+
+            # Sobe proporcionalmente ao raio (quanto mais perto do centro, mais sobe)
+            fator_subida = 1.2 - min(raio / max_raio, 1.0)  # central = ~1.2, borda = ~0.2
+            altura_local = 5.0 * t * fator_subida
+            self.vertices[i].y = self.initial_ys[i] + altura_local
+
+        # Salva a posição final do tornado para restaurar suavemente
+        if t >= 1.0 and not self.restoreStart:
             self.restoreStart = [ponto(v.x, v.y, v.z) for v in self.vertices]
 
     def _estado_restauracao(self, frame_index):
