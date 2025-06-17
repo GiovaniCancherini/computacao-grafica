@@ -37,23 +37,48 @@ class objeto3D:
         self.inicializou_S = False
         self.inicializou_coracao = False
 
-    def LoadFile(self, file: str):
-        f = open(file, "r")
-        for line in f:
-            values = line.split(' ')
-            if values[0] == 'v':
-                self.vertices.append(ponto(float(values[1]), float(values[2]), float(values[3])))
-                self.verticesBckp.append(ponto(float(values[1]), float(values[2]), float(values[3])))
-                self.speed.append((random.random() + 0.1))
-                self.angle.append(math.atan2(float(values[3]), float(values[1])))
-                self.radius.append(math.hypot(float(values[1]), float(values[3])))
+    def LoadFile(self, file: str, porcentagem_vertices: float = 1.0):
+        self.vertices = []
+        self.verticesBckp = []
+        self.faces = []
+        self.speed = []
+        self.angle = []
+        self.radius = []
 
-            if values[0] == 'f':
-                self.faces.append([])
-                for fVertex in values[1:]:
-                    fInfo = fVertex.split('/')
-                    self.faces[-1].append(int(fInfo[0]) - 1)
+        with open(file, "r") as f:
+            all_vertices = []
+            for line in f:
+                values = line.strip().split()
+                if not values:
+                    continue
+                if values[0] == 'v':
+                    x, y, z = float(values[1]), float(values[2]), float(values[3])
+                    all_vertices.append((x, y, z))
+                elif values[0] == 'f':
+                    self.faces.append([])
+                    for fVertex in values[1:]:
+                        fInfo = fVertex.split('/')
+                        self.faces[-1].append(int(fInfo[0]) - 1)
+
         f.close()
+        
+        total = len(all_vertices)
+        
+        if porcentagem_vertices >= 1.0:
+            selected_indices = range(total)
+        else:
+            passo = int(1.0 / porcentagem_vertices)
+            # garante distribuição uniforme, mesmo para baixos valores
+            selected_indices = range(0, total, passo)
+
+        for i in selected_indices:
+            x, y, z = all_vertices[i]
+            self.vertices.append(ponto(x, y, z))
+            self.verticesBckp.append(ponto(x, y, z))
+            self.speed.append(random.random() + 0.1)
+            self.angle.append(math.atan2(z, x))
+            self.radius.append(math.hypot(x, z))
+
 
     def DesenhaVerticesEsfera(self):
         glPushMatrix()

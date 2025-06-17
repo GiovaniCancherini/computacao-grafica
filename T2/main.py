@@ -25,6 +25,7 @@ cameraAngleY = 0.0
 historico = dict()
 frame_index = 0
 frame_visualizado = 0
+porcentagem_vertices_carregados = 0.5
 
 def determina_estado_por_frame(f: int):
     tempo = f / 30.0  # 30 FPS
@@ -52,7 +53,7 @@ def init():
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     o = objeto3D()
-    o.LoadFile('Human_Head.obj')
+    o.LoadFile('Human_Head.obj', porcentagem_vertices_carregados)
 
     defineLuz()
     posicUser()
