@@ -27,6 +27,7 @@ frame_index = 0
 frame_visualizado = 0
 porcentagem_vertices_carregados = 0.5
 
+# determina o estado da animacao com base no numero do frame
 def determina_estado_por_frame(f: int):
     tempo = f / 30.0  # 30 FPS
     if tempo < 2:
@@ -42,6 +43,7 @@ def determina_estado_por_frame(f: int):
     else:
         return 'ESTADO_CORACAO'
 
+# inicializa parametros de renderizacao, objeto e luz
 def init():
     global o
     glClearColor(0.5, 0.5, 0.9, 1.0)
@@ -59,24 +61,25 @@ def init():
     posicUser()
     glutReshapeFunc(reshape)
 
+# configura a iluminacao da cena
 def defineLuz():
     # Define cores para um objeto dourado
     luz_ambiente = [0.4, 0.4, 0.4]
     luz_difusa = [0.7, 0.7, 0.7]
     luz_especular = [0.9, 0.9, 0.9]
-    posicao_luz = [2.0, 3.0, 0.0]  # PosiÃ§Ã£o da Luz
+    posicao_luz = [2.0, 3.0, 0.0]
     especularidade = [1.0, 1.0, 1.0]
 
     # ****************  Fonte de Luz 0
 
     glEnable(GL_COLOR_MATERIAL)
 
-    #Habilita o uso de iluminaÃ§Ã£o
+    #Habilita o uso de iluminação
     glEnable(GL_LIGHTING)
 
     #Ativa o uso da luz ambiente
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, luz_ambiente)
-    # Define os parametros da luz nÃºmero Zero
+    # Define os parametros da luz numero Zero
     glLightfv(GL_LIGHT0, GL_AMBIENT, luz_ambiente)
     glLightfv(GL_LIGHT0, GL_DIFFUSE, luz_difusa)
     glLightfv(GL_LIGHT0, GL_SPECULAR, luz_especular)
@@ -89,23 +92,26 @@ def defineLuz():
     # Define a reflectancia do material
     glMaterialfv(GL_FRONT, GL_SPECULAR, especularidade)
 
-    # Define a concentraÃ§Ã£oo do brilho.
+    # Define a concentração do brilho.
     # Quanto maior o valor do Segundo parametro, mais
-    # concentrado serÃ¡ o brilho. (Valores vÃ¡lidos: de 0 a 128)
+    # concentrado será o brilho. (Valores válidos: de 0 a 128)
     glMateriali(GL_FRONT, GL_SHININESS, 51)
 
+# posiciona a camera do usuario
 def posicUser():
     glLoadIdentity()
     gluLookAt(cameraX, cameraY, cameraZ, 0, 0, 0, 0, 1.0, 0)
     glRotatef(cameraAngleY, 1.0, 0.0, 0.0)
     glRotatef(cameraAngleX, 0.0, 1.0, 0.0)
 
+# define a perspectiva da camera
 def definePerspectiva(w, h):
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(60, w/h, 0.1, 50.0)
     glMatrixMode(GL_MODELVIEW)
-    
+
+# desenha um ladrilho (quadrado) no chao
 def desenhaLadrilho():
     glColor3f(0.5, 0.5, 0.5)  # desenha QUAD preenchido
     glBegin(GL_QUADS)
@@ -125,6 +131,7 @@ def desenhaLadrilho():
     glVertex3f(0.5, 0.0, -0.5)
     glEnd()
 
+# desenha o piso composto de varios ladrilhos
 def desenhaPiso():
     glPushMatrix()
     glTranslated(-20, -1, -10)
@@ -137,6 +144,7 @@ def desenhaPiso():
         glTranslated(1, 0, 0)
     glPopMatrix()
 
+# desenha um cubo com um cone em cima (nao usado diretamente no render)
 def desenhaCubo():
     glPushMatrix()
     glColor3f(1, 0, 0)
@@ -181,15 +189,14 @@ def animacao():
 
         glutPostRedisplay()
 
+# desenha a cena 3D na tela
 def desenha():
     global o, historico, frame_visualizado, frame_index, segundos
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
     glMatrixMode(GL_MODELVIEW)
     glLoadIdentity()
     posicUser()
-
     desenhaPiso()
     
     if frame_visualizado in historico:
@@ -201,7 +208,7 @@ def desenha():
     glutSwapBuffers()
     pass
 
-# Função para teclado
+# trata as teclas de controle ascii
 def teclado(key: chr, x: int, y: int):
     global idle_ativo, frame_visualizado, frame_index, estado
     global cameraX, cameraY, cameraZ, o, historico
@@ -247,7 +254,6 @@ def teclado(key: chr, x: int, y: int):
         o.position.x -= 0.1
     elif key == b'd':
         o.position.x += 0.1
-
     elif key == b'q':
         cameraZ += 0.2
     elif key == b'e':
@@ -259,11 +265,10 @@ def teclado(key: chr, x: int, y: int):
 
     glutPostRedisplay()
 
-# Função para teclado
+# trata as teclas especiais (setas) para rotacao da camera
 def teclasEspeciais(key: chr, x: int, y: int):
     global segundos, idle_ativo, o, cameraX, cameraY, cameraZ, cameraAngleX, cameraAngleY
     cameraSpeed = 5
-    # movimento camera
     if key == GLUT_KEY_LEFT:
         cameraAngleX -= cameraSpeed
     elif key == GLUT_KEY_RIGHT:
@@ -272,18 +277,16 @@ def teclasEspeciais(key: chr, x: int, y: int):
         cameraAngleY -= cameraSpeed
     elif key == GLUT_KEY_DOWN:
         cameraAngleY += cameraSpeed
-        
     glutPostRedisplay() # Redesenha
-    pass
 
+# trata a mudanca de tamanho da janela
 def reshape(w, h):
     if h == 0:
-        h = 1  # evitar divisão por zero
-
+        h = 1
     glViewport(0, 0, w, h)
     definePerspectiva(w, h)
-    pass
 
+# funcao principal que inicia o programa e registra os callbacks
 def main():
     glutInit(sys.argv)
 
@@ -292,8 +295,6 @@ def main():
 
     # Especifica o tamnho inicial em pixels da janela GLUT
     glutInitWindowSize(640, 480)
-
-    # Especifica a posição de início da janela
     glutInitWindowPosition(100, 100)
 
     # Cria a janela passando o título da mesma como argumento
