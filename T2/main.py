@@ -25,7 +25,7 @@ cameraAngleY = 0.0
 historico = dict()
 frame_index = 0
 frame_visualizado = 0
-porcentagem_vertices_carregados = 0.5
+porcentagem_vertices_carregados = 1.0 # 0.5
 
 # determina o estado da animacao com base no numero do frame
 def determina_estado_por_frame(f: int):
