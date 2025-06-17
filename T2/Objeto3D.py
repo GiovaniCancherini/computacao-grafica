@@ -21,6 +21,7 @@ class objeto3D:
         self.velocidadeY = []
         self.destinoS = []
         self.destinoCoracao = []
+        self.restoreStart = []
 
         # parametros dissolucao
         self.gravidade = 0.01
@@ -35,6 +36,7 @@ class objeto3D:
         self.inicializou_redemoinho = False
         self.inicializou_S = False
         self.inicializou_coracao = False
+        
 
     def LoadFile(self, file: str):
         f = open(file, "r")
@@ -162,99 +164,100 @@ class objeto3D:
         self.inicializou_coracao = True
                 
     def ProximaPos(self, estado, frame_index):
-        rot_speed_factor = 2.5 # Fator para a velocidade de rotacao
-        vertical_speed_factor = 0.05 # Fator para a velocidade de subida
-        max_tornado_height = 5.0 # Altura máxima do tornado
-        tornado_duration_frames = 180 # Duracao do tornado em frames (6 segundos a 30 FPS)
-        restore_duration_frames = 180 # Duracao da restauracao em frames (6 segundos a 30 FPS)
-        
-        tempoAtual = frame_index / 30.0 # tempo em segundos
-        
+        match estado:
+            case 'ESTADO_INICIAL':
+                self._estado_inicial()
+            case 'ESTADO_DISSOLUCAO':
+                self._estado_dissolucao()
+            case 'ESTADO_TORNADO':
+                self._estado_tornado(frame_index)
+            case 'ESTADO_RESTAURACAO':
+                self._estado_restauracao(frame_index)
+            case 'ESTADO_S':
+                self._estado_S()
+            case 'ESTADO_CORACAO':
+                self._estado_coracao()
+
+    def _estado_inicial(self):
         for i in range(len(self.vertices)):
-            match estado:
-                case 'ESTADO_INICIAL':
-                    self.vertices[i].x = self.verticesBckp[i].x
-                    self.vertices[i].y = self.verticesBckp[i].y
-                    self.vertices[i].z = self.verticesBckp[i].z
-                    # Resetar flags
-                    self.inicializou_dissolucao = False
-                    self.inicializou_redemoinho = False
-                    self.inicializou_S = False
-                    self.inicializou_coracao = False
-                    
-                case 'ESTADO_DISSOLUCAO':
-                    if not self.inicializou_dissolucao:
-                        self.inicializaDissolucao()
+            self.vertices[i] = ponto(
+                self.verticesBckp[i].x,
+                self.verticesBckp[i].y,
+                self.verticesBckp[i].z
+            )
+        self.inicializou_dissolucao = False
+        self.inicializou_redemoinho = False
+        self.inicializou_S = False
+        self.inicializou_coracao = False
 
-                    self.vertices[i].y += self.velocidadeY[i]
-                    self.velocidadeY[i] -= self.gravidade
+    def _estado_dissolucao(self):
+        if not self.inicializou_dissolucao:
+            self.inicializaDissolucao()
 
-                    if self.vertices[i].y <= 0:
-                        self.vertices[i].y = 0
-                        self.vertices[i].x += random.uniform(-0.1, 0.1)
-                        self.velocidadeY[i] *= -0.7
+        for i in range(len(self.vertices)):
+            self.vertices[i].y += self.velocidadeY[i]
+            self.velocidadeY[i] -= self.gravidade
 
-                case 'ESTADO_TORNADO':
-                    if not self.inicializou_redemoinho:
-                        self.inicializaRedemoinho()
-                    
-                    # Normaliza o tempo para o período do tornado (0 a 1)
-                    # O tempo total do estado 'ESTADO_TORNADO' e 18 - 12 = 6 segundos, ou 180 frames.
-                    # 'segundos' em main.py e o tempo total da simulacao.
-                    # Para isolar o tempo do tornado, subtraímos o tempo de início do tornado (12 segundos = 360 frames).
-                    relative_frame = frame_index - (12 * 30) 
-                    t = min(relative_frame / tornado_duration_frames, 1.0) # t vai de 0 a 1 durante o tornado
+            if self.vertices[i].y <= 0:
+                self.vertices[i].y = 0
+                self.vertices[i].x += random.uniform(-0.1, 0.1)
+                self.velocidadeY[i] *= -0.7
 
-                    # Aumenta a velocidade de rotacao e subida gradualmente
-                    # A rotacao e mais rápida no centro e mais lenta nas bordas
-                    # A velocidade angular (angle_speed) e maior para raios menores
-                    angle_speed = rot_speed_factor / (self.radii[i] + 0.1) # Adiciona 0.1 para evitar divisao por zero e suavizar
-                    
-                    # Atualiza o angulo com base na velocidade angular e tempo
-                    self.initAngles[i] += angle_speed * t * 0.1 # Multiplicador para controle fino
+    def _estado_tornado(self, frame_index):
+        if not self.inicializou_redemoinho:
+            self.inicializaRedemoinho()
 
-                    # Calcula as novas posicões X e Z
-                    self.vertices[i].x = self.radii[i] * math.cos(self.initAngles[i])
-                    self.vertices[i].z = self.radii[i] * math.sin(self.initAngles[i])
+        relative_frame = frame_index - (12 * 30)
+        t = min(relative_frame / 180, 1.0)  # 6s * 30fps
 
-                    # Aumenta a altura gradualmente, comecando da posicao Y inicial da partícula
-                    self.vertices[i].y = self.initial_ys[i] + (max_tornado_height * t)
-                    
-                case 'ESTADO_RESTAURACAO':
-                    # Para a restauracao, queremos que as partículas voltem para verticesBckp
-                    # O tempo total do estado 'ESTADO_RESTAURACAO' e 24 - 18 = 6 segundos, ou 180 frames.
-                    relative_frame = frame_index - (18 * 30) 
-                    t = min(relative_frame / restore_duration_frames, 1.0) # t vai de 0 a 1 durante a restauracao
+        for i in range(len(self.vertices)):
+            angle_speed = 2.5 / (self.radii[i] + 0.1)
+            self.initAngles[i] += angle_speed * t * 0.1
+            self.vertices[i].x = self.radii[i] * math.cos(self.initAngles[i])
+            self.vertices[i].z = self.radii[i] * math.sin(self.initAngles[i])
+            self.vertices[i].y = self.initial_ys[i] + (5.0 * t)
 
-                    orig = self.verticesBckp[i]
-                    current = self.vertices[i]
+            # Salva a posição final do tornado para restaurar suavemente
+        if t >= 1.0 and not self.restoreStart:  
+            self.restoreStart = [ponto(v.x, v.y, v.z) for v in self.vertices]
 
-                    # Interpolacao linear da posicao atual para a posicao original
-                    self.vertices[i].x = current.x * (1 - t) + orig.x * t
-                    self.vertices[i].y = current.y * (1 - t) + orig.y * t
-                    self.vertices[i].z = current.z * (1 - t) + orig.z * t
-                    
-                    # Ao final da restauracao, resetar a inicializacao do redemoinho
-                    # para que o próximo ciclo comece corretamente.
-                    if t >= 1.0:
-                        self.inicializou_redemoinho = False
-                        self.inicializou_dissolucao = False # para caso o ciclo se repita
-                        self.altura_centro_redemoinho = 0
 
-                case 'ESTADO_S':
-                    if not self.inicializou_S:
-                        self.inicializaDestinoS()
+    def _estado_restauracao(self, frame_index):
+        relative_frame = frame_index - (18 * 30)
+        t = min(relative_frame / 180, 1.0)
 
-                    destino = self.destinoS[i]
-                    self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
-                    self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
-                    self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
+        if not self.restoreStart:
+            self.restoreStart = [ponto(v.x, v.y, v.z) for v in self.vertices]
 
-                case 'ESTADO_CORACAO':
-                    if not self.inicializou_coracao:
-                        self.inicializaDestinoCoracao()
+        for i in range(len(self.vertices)):
+            start = self.restoreStart[i]
+            end = self.verticesBckp[i]
+            self.vertices[i].x = start.x * (1 - t) + end.x * t
+            self.vertices[i].y = start.y * (1 - t) + end.y * t
+            self.vertices[i].z = start.z * (1 - t) + end.z * t
 
-                    destino = self.destinoCoracao[i]
-                    self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
-                    self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
-                    self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
+        if t >= 1.0:
+            self.inicializou_redemoinho = False
+            self.inicializou_dissolucao = False
+            self.altura_centro_redemoinho = 0
+            self.restoreStart = []
+
+    def _estado_S(self):
+        if not self.inicializou_S:
+            self.inicializaDestinoS()
+        for i in range(len(self.vertices)):
+            destino = self.destinoS[i]
+            self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
+            self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
+            self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
+
+    def _estado_coracao(self):
+        if not self.inicializou_coracao:
+            self.inicializaDestinoCoracao()
+        for i in range(len(self.vertices)):
+            destino = self.destinoCoracao[i]
+            self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
+            self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
+            self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
+
+
