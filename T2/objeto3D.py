@@ -1,4 +1,4 @@
-import time, math, random
+import math, random
 
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -36,7 +36,6 @@ class objeto3D:
         self.inicializou_redemoinho = False
         self.inicializou_S = False
         self.inicializou_coracao = False
-        
 
     def LoadFile(self, file: str):
         f = open(file, "r")
@@ -221,7 +220,6 @@ class objeto3D:
         if t >= 1.0 and not self.restoreStart:  
             self.restoreStart = [ponto(v.x, v.y, v.z) for v in self.vertices]
 
-
     def _estado_restauracao(self, frame_index):
         relative_frame = frame_index - (18 * 30)
         t = min(relative_frame / 180, 1.0)
@@ -259,5 +257,3 @@ class objeto3D:
             self.vertices[i].x += (destino.x - self.vertices[i].x) * 0.05
             self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
             self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
-
-

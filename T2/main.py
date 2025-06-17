@@ -34,13 +34,12 @@ def determina_estado_por_frame(f: int):
         return 'ESTADO_DISSOLUCAO'
     elif tempo < 18:
         return 'ESTADO_TORNADO'
-    elif tempo < 24:
+    elif tempo < 27:
         return 'ESTADO_RESTAURACAO'
-    elif tempo < 30:
+    elif tempo < 33:
         return 'ESTADO_S'
     else:
         return 'ESTADO_CORACAO'
-
 
 def init():
     global o
@@ -175,7 +174,6 @@ def animacao():
         frame_index += 1
 
         glutPostRedisplay()
- 
 
 def desenha():
     global o, historico, frame_visualizado, frame_index, segundos
@@ -186,7 +184,7 @@ def desenha():
     glLoadIdentity()
     posicUser()
 
-    # desenhaPiso()
+    desenhaPiso()
     
     if frame_visualizado in historico:
         print(f'Frame EXIBIDO: {frame_visualizado}, Frame Renderizado: {frame_index}, Tempo: {segundos} segundos')
@@ -194,7 +192,6 @@ def desenha():
     else:
         print('[ ERRO ] frame_visualizado não encontrado no histórico:', frame_visualizado)
         # o.DesenhaVerticesEsfera()
-        
     glutSwapBuffers()
     pass
 
@@ -211,15 +208,12 @@ def teclado(key: chr, x: int, y: int):
         if idle_ativo:
             estado = determina_estado_por_frame(frame_visualizado)
             frame_index = frame_visualizado + 1
-
     elif key == b'[':
         idle_ativo = False
         frame_visualizado = max(0, frame_visualizado - 1)
-
     elif key == b',':
         idle_ativo = False
         frame_visualizado = max(0, frame_visualizado - 10)
-
     elif key == b']':
         idle_ativo = False
         frame_visualizado = min(frame_visualizado + 1, frame_index + 1)
@@ -228,7 +222,6 @@ def teclado(key: chr, x: int, y: int):
             o.ProximaPos(estado, frame_visualizado)
             historico[frame_visualizado] = copy.deepcopy(o)
         frame_index = max(frame_index, frame_visualizado + 1)
-
     elif key == b'.':
         idle_ativo = False
         to_frame = min(frame_visualizado + 10, frame_index + 10)
@@ -260,8 +253,6 @@ def teclado(key: chr, x: int, y: int):
 
     glutPostRedisplay()
 
-
-
 # Função para teclado
 def teclasEspeciais(key: chr, x: int, y: int):
     global segundos, idle_ativo, o, cameraX, cameraY, cameraZ, cameraAngleX, cameraAngleY
@@ -288,7 +279,6 @@ def reshape(w, h):
     pass
 
 def main():
-
     glutInit(sys.argv)
 
     # Define o modelo de operacao da GLUT
