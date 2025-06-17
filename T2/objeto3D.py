@@ -7,6 +7,8 @@ from ponto import *
 
 class objeto3D:
         
+    # inicializa todas as listas de vertices, faces, velocidades e parametros de estado. 
+    # tambem define parametros para os efeitos como dissolucao, tornado, formato de "s" e coracao.
     def __init__(self):
         self.vertices = []
         self.verticesBckp = []
@@ -37,6 +39,8 @@ class objeto3D:
         self.inicializou_S = False
         self.inicializou_coracao = False
 
+    # carrega um arquivo .obj contendo os vertices e faces. seleciona uma porcentagem dos vertices para desenhar. 
+    # calcula o angulo e raio de cada vertice em relacao ao eixo z para animacoes futuras.
     def LoadFile(self, file: str, porcentagem_vertices: float = 1.0):
         self.vertices = []
         self.verticesBckp = []
@@ -79,7 +83,7 @@ class objeto3D:
             self.angle.append(math.atan2(z, x))
             self.radius.append(math.hypot(x, z))
 
-
+    # desenha cada vertice como uma pequena esfera preta no espaco 3d, aplicando rotacao e translacao
     def DesenhaVerticesEsfera(self):
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
@@ -99,6 +103,7 @@ class objeto3D:
         glPopMatrix()
         pass
     
+    # desenha cada vertice como um pequeno cubo preto no espaco 3d, aplicando rotacao e translacao
     def DesenhaVerticesCubos(self):
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
@@ -118,6 +123,7 @@ class objeto3D:
         glPopMatrix()
         pass
 
+    # desenha as arestas (linhas) das faces do objeto em formato wireframe (grade), usando os vertices atuais
     def DesenhaWireframe(self):
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
@@ -135,6 +141,7 @@ class objeto3D:
         glPopMatrix()
         pass
 
+    # desenha as faces do objeto preenchidas com triangulos (modo solido), com cor cinza escuro
     def Desenha(self):
         glPushMatrix()
         glTranslatef(self.position.x, self.position.y, self.position.z)
@@ -152,10 +159,12 @@ class objeto3D:
         glPopMatrix()
         pass
 
+    # prepara os vertices para o efeito de dissolucao, atribuindo gravidade inicial a cada um
     def inicializaDissolucao(self):
         self.velocidadeY = [self.gravidade for _ in self.vertices]
         self.inicializou_dissolucao = True
 
+    # prepara os vertices para o efeito de tornado/redemoinho, salvando angulo, raio e altura inicial de cada vertice
     def inicializaRedemoinho(self):
         # Reinicia os angulos e raios para o estado de tornado
         self.initAngles = [math.atan2(v.z, v.x) for v in self.vertices]
@@ -165,6 +174,7 @@ class objeto3D:
         self.altura_centro_redemoinho = 0
         self.inicializou_redemoinho = True
     
+    # calcula as posicoes de destino dos vertices para formar uma letra "s" no espaco
     def inicializaDestinoS(self):
         self.destinoS = []
         total = len(self.vertices)
@@ -177,6 +187,7 @@ class objeto3D:
             self.destinoS.append(ponto(x, y, z))
         self.inicializou_S = True
 
+    # calcula as posicoes de destino dos vertices para formar um coracao 2d no plano x-y 
     def inicializaDestinoCoracao(self):
         self.destinoCoracao = []
         for i, v in enumerate(self.vertices):
@@ -186,7 +197,8 @@ class objeto3D:
             z = 0
             self.destinoCoracao.append(ponto(x, y, z))
         self.inicializou_coracao = True
-                
+         
+    # controla qual efeito animado aplicar no objeto com base no estado atual e frame da animacao
     def ProximaPos(self, estado, frame_index):
         match estado:
             case 'ESTADO_INICIAL':
@@ -202,6 +214,7 @@ class objeto3D:
             case 'ESTADO_CORACAO':
                 self._estado_coracao()
 
+    # restaura os vertices para sua posicao original e reinicia os estados de animacoes
     def _estado_inicial(self):
         for i in range(len(self.vertices)):
             self.vertices[i] = ponto(
@@ -214,6 +227,7 @@ class objeto3D:
         self.inicializou_S = False
         self.inicializou_coracao = False
 
+    # restaura os vertices para sua posicao original e reinicia os estados de animacoes
     def _estado_dissolucao(self):
         if not self.inicializou_dissolucao:
             self.inicializaDissolucao()
@@ -227,6 +241,7 @@ class objeto3D:
                 self.vertices[i].x += random.uniform(-0.1, 0.1)
                 self.velocidadeY[i] *= -0.7
 
+    # faz os vertices girarem em espiral e subirem, simulando um tornado. salva a ultima posicao para restaurar depois
     def _estado_tornado(self, frame_index):
         if not self.inicializou_redemoinho:
             self.inicializaRedemoinho()
@@ -254,6 +269,7 @@ class objeto3D:
         if t >= 1.0 and not self.restoreStart:
             self.restoreStart = [ponto(v.x, v.y, v.z) for v in self.vertices]
 
+    # move suavemente os vertices da ultima posicao animada de volta para a posicao original
     def _estado_restauracao(self, frame_index):
         relative_frame = frame_index - (18 * 30)
         t = min(relative_frame / 180, 1.0)
@@ -274,6 +290,7 @@ class objeto3D:
             self.altura_centro_redemoinho = 0
             self.restoreStart = []
 
+    # move os vertices suavemente ate suas posicoes de destino para formar a letra "s"
     def _estado_S(self):
         if not self.inicializou_S:
             self.inicializaDestinoS()
@@ -283,6 +300,7 @@ class objeto3D:
             self.vertices[i].y += (destino.y - self.vertices[i].y) * 0.05
             self.vertices[i].z += (destino.z - self.vertices[i].z) * 0.05
 
+    # move os vertices suavemente ate suas posicoes de destino para formar um coracao
     def _estado_coracao(self):
         if not self.inicializou_coracao:
             self.inicializaDestinoCoracao()
